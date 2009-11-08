@@ -1,0 +1,4 @@
+all:
+	mkdir build-`uname -m`
+	cd build-`uname -m`
+	cmake ..

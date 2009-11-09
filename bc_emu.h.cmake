@@ -24,11 +24,11 @@
 
 /* debug code */
 #cmakedefine DEBUG
-#cmakedefine NDEBUG     /* disable asserts, etc. */
+#cmakedefine NDEBUG     /* stdlib (assert) */
 
-/* host architecture endianness */
-#cmakedefine LSB        /* little endian */
-#cmakedefine MSB        /* big endian */
+/* host architecture byte-order */
+#cmakedefine LSB
+#cmakedefine MSB
 
 
 /* -------------------------------------------------------------------------- *
@@ -48,4 +48,4 @@
 #include "xtypes.h"
 
 
-#endif /* __BC_PCE_H */
+#endif /* __BC_EMU_H */

@@ -51,10 +51,9 @@ ENDIF(NOT ${BIG_ENDIAN})
 # build with debug code
 OPTION(DEBUG            "Debug build"                       OFF)
 IF(${DEBUG})
-	# TODO make os/arch/compiler specific
-	ADD_DEFINITIONS(-g)
+	ADD_DEFINITIONS(-g) # TODO: make compiler/os specific
 ELSE(${DEBUG})
-	SET(NDEBUG)
+	SET(NDEBUG "1")
 ENDIF(${DEBUG})
 
 # compile-time configuration (bc_emu.h):

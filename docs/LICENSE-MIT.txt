@@ -1,3 +1,5 @@
+This file contains all licenses used to licence parts of project.
+
 Copyright © 2009 Ondřej Baláž, <ondra@blami.net>
 
 Permission is hereby granted, free of charge, to any person

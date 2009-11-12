@@ -6,7 +6,7 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* bc_emu.h: Compile-time configuration settings. */
+/* pc_cli.h: Compile-time configuration settings. */
 
 #ifndef __BC_EMU_H
 #define __BC_EMU_H
@@ -30,26 +30,7 @@
 #cmakedefine LSB
 #cmakedefine MSB
 
-/* host architecture information */
-#cmakedefine BUILD_OS   "@BUILD_OS@"
-#cmakedefine BUILD_CPU  "@BUILD_CPU@"
-#cmakedefine VERSION    "@VERSION@"
-
 /* build configuration */
-/* architecture */
-#cmakedefine ARCH       "@ARCH@"
-#cmakedefine ARCH_PC_CLI
-#cmakedefine ARCH_NDS
-
-/* emulator */
-#cmakedefine EMU_NULL   /* null emulator (debug) */
-#cmakedefine EMU_PCE    /* NEC PCEngine emulator */
-
-/* debugger */
-#cmakedefine DBG_NULL   /* null debugger (debug) */
-
-/* ui */
-#cmakedefine UI_NULL    /* null user interface (debug) */
 #cmakedefine UI_SDL     /* SDL user interface */
 
 /* -------------------------------------------------------------------------- *
@@ -69,36 +50,7 @@
 #include "xtypes.h"
 
 /* build configuration headers */
-/* architecture */
-#ifdef ARCH_PC_CLI              /* PC CLI */
-#include "arch/pc/pc_cli.h"
-#endif /* ARCH-PC_CLI */
-
-#ifdef ARCH_NDS                 /* Nintendo DS (tm) homebrew */
-#include "arch/nds/nds-arm7.h"
-#include "arch/nds/nds-arm9.h"
-#endif /* ARCH-NDS */
-
-/* emulator */
-#ifdef EMU_NULL                 /* NULL emulator (debug) */
-#include "emu/null/null.h"
-#endif /* EMU_NULL */
-
-#ifdef EMU_PCE                  /* NEC PCEngine emulator */
-#include "emu/pce/pce.h"
-#endif /* EMU_PCE */
-
-/* debugger */
-#ifdef DBG_NULL                 /* NULL debugger (debug) */
-#include "dbg/dbg_null/null.h"
-#endif /* DBG_NULL */
-
-/* user interface */
-#ifdef UI_NULL                  /* NULL user interface (debug) */
-#include "emu/null/null.h"
-#endif /* UI_NULL */
-
-#ifdef UI_SDL                   /* SDL user interface */
+#ifdef UI_SDL
 #include "ui/sdl/sdl.h"
 #endif /* UI_SDL */
 

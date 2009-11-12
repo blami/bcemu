@@ -6,14 +6,15 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* bc_emu.c: Program entry point. */
+/* sdl.h: SDL user interface frontend header. */
 
-#include "bc_emu.h"
+#ifndef __SDL_H
+#define __SDL_H
+
+#include "SDL/SDL.h"
 
 
-/*
- * NOTE:
- * This file acts only as holder of arch non-specific code. main() or other
- * de-facto arch-specific routines are part of architecture .c file in arch/
- * directory.
- */
+extern void sdl_init();
+extern void sdl_shutdown();
+
+#endif /* __SDL_H */

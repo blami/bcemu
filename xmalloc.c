@@ -28,6 +28,7 @@
 
 #include "debug.h"
 #include <malloc.h>
+#include <string.h>
 
 
 /* malloc.h */

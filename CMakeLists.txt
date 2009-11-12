@@ -70,6 +70,15 @@ ELSE(DEBUG)
 	SET(NDEBUG "1")
 ENDIF(DEBUG)
 
+# on x86_64 enable -m32
+IF(UNIX AND (BUILD_CPU STREQUAL "x86_64"))
+OPTION(BUILD_32BIT      "Build 32bit binary (-m32)"     OFF)
+IF(BUILD_32BIT)
+	MESSAGE(WARNING "You have selected 32bit binary output on x86_64 host. Remember that you will need 32bit versions of devel packages and operating system kernel support")
+	SET(LINK_FLAGS "-m32")
+ENDIF(BUILD_32BIT)
+ENDIF(UNIX AND (BUILD_CPU STREQUAL "x86_64"))
+
 # target architecture
 SET(ARCH    "pc_cli"    CACHE STRING "Target architecture")
 IF(ARCH     STREQUAL "pc_cli")
@@ -90,27 +99,41 @@ ENDIF(ARCH  STREQUAL "pc_cli")
 
 
 ### EMULATOR OPTIONS ###
+SET(EMU)
 # null
 OPTION(EMU_NULL         "Enable null emulator (debug)"          OFF)
+IF(EMU_NULL)
+	SET(EMU "null ${EMU}")
+ENDIF(EMU_NULL)
 
 # NEC PCEngine
 OPTION(EMU_PCE          "Enable NEC PCEngine emulator"          ON)
+IF(EMU_PCE)
+	SET(EMU "pce ${EMU}")
+ENDIF(EMU_PCE)
 
 
 ### DEBUGGER TOOL OPTIONS ###
+SET(DBG)
 # null
 OPTION(DBG_NULL         "Enable null debugger (debug)"          OFF)
+IF(DBG_NULL)
+	SET(DBG "null ${DBG}")
+ENDIF(DBG_NULL)
 
 
 ### USER INTERFACE OPTIONS ###
+SET(UI)
 # null
 OPTION(UI_NULL          "Enable null user interface (debug)"    OFF)
 IF(UI_NULL)
+	SET(UI "null ${UI}")
 ENDIF(UI_NULL)
 
 # SDL
 OPTION(UI_SDL           "Enable SDL user interface"             ON)
 IF(UI_SDL AND (ARCH STREQUAL "pc_cli"))
+	SET(UI "sdl ${UI}")
 	FIND_PACKAGE(SDL REQUIRED)
 	ADD_LIBRARY(ui_sdl STATIC
 		ui/sdl/sdl.c

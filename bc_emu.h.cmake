@@ -42,13 +42,16 @@
 #cmakedefine ARCH_NDS
 
 /* emulator */
+#cmakedefine EMU        "@EMU@"
 #cmakedefine EMU_NULL   /* null emulator (debug) */
 #cmakedefine EMU_PCE    /* NEC PCEngine emulator */
 
 /* debugger */
+#cmakedefine DBG        "@DBG@"
 #cmakedefine DBG_NULL   /* null debugger (debug) */
 
 /* ui */
+#cmakedefine UI         "@UI@"
 #cmakedefine UI_NULL    /* null user interface (debug) */
 #cmakedefine UI_SDL     /* SDL user interface */
 
@@ -72,12 +75,12 @@
 /* architecture */
 #ifdef ARCH_PC_CLI              /* PC CLI */
 #include "arch/pc/pc_cli.h"
-#endif /* ARCH-PC_CLI */
+#endif /* ARCH_PC_CLI */
 
 #ifdef ARCH_NDS                 /* Nintendo DS (tm) homebrew */
 #include "arch/nds/nds-arm7.h"
 #include "arch/nds/nds-arm9.h"
-#endif /* ARCH-NDS */
+#endif /* ARCH_NDS */
 
 /* emulator */
 #ifdef EMU_NULL                 /* NULL emulator (debug) */

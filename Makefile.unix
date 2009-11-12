@@ -1,4 +1,18 @@
-all:
-	mkdir build-`uname -m`
-	cd build-`uname -m`
-	cmake ..
+all: build
+
+config:
+	echo "Preparing build directory..."
+	-mkdir _build-`uname -m`
+	cd _build-`uname -m` && cmake ..
+
+build: config
+	echo "Building..."
+	cd _build-`uname -m` && make
+
+clean:
+	echo "Cleaning build directory..."
+	-cd _build-`uname -m` && make clean
+
+distclean: 
+	echo "Removing build directory..."
+	-rm -rf _build-`uname -m`

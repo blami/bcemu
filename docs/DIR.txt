@@ -1,8 +1,0 @@
-Here are descriptions of contents of important directories inside project.
-
-arch/       - architecture specific parts of `bc_emu'
-dbg/        - client debugging routines (also architecture specific). THIS IS
-              NOT CODE THAT HELPS YOU TO DEBUG `bc_emu' ITSELF. IT'S ASSEMBLY
-              DEBBUGER TO DEBUG BINARIES RUNNING IN `bc_emu'.
-emu/        - emulator cores for emulated systems
-ui/         - user interface frontends

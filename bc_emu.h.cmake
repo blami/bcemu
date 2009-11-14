@@ -34,11 +34,13 @@
 #cmakedefine BUILD_OS   "@BUILD_OS@"
 #cmakedefine BUILD_CPU  "@BUILD_CPU@"
 #cmakedefine VERSION    "@VERSION@"
+#cmakedefine CODENAME   "@CODENAME@"
+#cmakedefine WIN32
 
 /* build configuration */
 /* architecture */
 #cmakedefine ARCH       "@ARCH@"
-#cmakedefine ARCH_PC_CLI
+#cmakedefine ARCH_PC
 #cmakedefine ARCH_NDS
 
 /* emulator */
@@ -73,9 +75,9 @@
 
 /* build configuration headers */
 /* architecture */
-#ifdef ARCH_PC_CLI              /* PC CLI */
-#include "arch/pc/pc_cli.h"
-#endif /* ARCH_PC_CLI */
+#ifdef ARCH_PC                  /* PC */
+#include "arch/pc/pc.h"
+#endif /* ARCH_PC */
 
 #ifdef ARCH_NDS                 /* Nintendo DS (tm) homebrew */
 #include "arch/nds/nds-arm7.h"
@@ -104,5 +106,19 @@
 #ifdef UI_SDL                   /* SDL user interface */
 #include "ui/sdl/sdl.h"
 #endif /* UI_SDL */
+
+/* -------------------------------------------------------------------------- *
+ * Globals                                                                    *
+ * -------------------------------------------------------------------------- */
+
+extern uint8* bc_emu_rom;       /* pointer to ROM image */
+
+
+/* -------------------------------------------------------------------------- *
+ * Function prototypes                                                        *
+ * -------------------------------------------------------------------------- */
+
+extern int bc_emu_main(char*, char*, char*);
+extern void bc_emu_exit();
 
 #endif /* __BC_EMU_H */

@@ -9,11 +9,11 @@
 /* sdl.c: SDL user interface frontend. */
 
 #include "bc_emu.h"
-#include "ui/sdl/sdl.h"
+#include "sdl.h"
 
 
-SDL_Surface* sdl_surfscr;
-SDL_Surface* sdl_surfbuf;
+static SDL_Surface* ui_sdl_scr;
+static SDL_Surface* ui_sdl_buf;
 
 /* -------------------------------------------------------------------------- *
  * Init, shutdown routines                                                    *
@@ -22,7 +22,7 @@ SDL_Surface* sdl_surfbuf;
 /**
  * Initialize SDL user interface.
  */
-void sdl_ui_init()
+void ui_sdl_init()
 {
 	debug("SDL init");
 
@@ -30,7 +30,7 @@ void sdl_ui_init()
 		fatal("couldn't initialize SDL");
 
 	// TODO configuration file sdl.resolution, sdl.bpp
-	if(!(sdl_surfscr = SDL_SetVideoMode(640, 480, 16, SDL_DOUBLEBUF)))
+	if(!(ui_sdl_scr = SDL_SetVideoMode(640, 480, 16, SDL_DOUBLEBUF)))
 	{
 		SDL_Quit();
 		fatal("couldn't initialize SDL video surface");
@@ -45,14 +45,14 @@ void sdl_ui_init()
 /**
  * Shutdown SDL user interface.
  */
-void sdl_ui_shutdown()
+void ui_sdl_shutdown()
 {
 	debug("SDL shutdown");
 
-	if(sdl_surfscr)
-		SDL_FreeSurface(sdl_surfscr);
-	if(sdl_surfbuf)
-		SDL_FreeSurface(sdl_surfbuf);
+	if(ui_sdl_scr)
+		SDL_FreeSurface(ui_sdl_scr);
+	if(ui_sdl_buf)
+		SDL_FreeSurface(ui_sdl_buf);
 
 	SDL_Quit();
 }
@@ -99,21 +99,6 @@ void sdl_update_input()
 	}
 }
 
-/**
- * Update video output.
- */
-void sdl_update_video()
-{
-}
-
-/**
- * Update audio output.
- */
-void sdl_update_audio()
-{
-}
-
 /* -------------------------------------------------------------------------- *
  * Private functions, helpers                                                 *
  * -------------------------------------------------------------------------- */
-

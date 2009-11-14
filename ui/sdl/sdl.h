@@ -14,7 +14,11 @@
 #include "SDL/SDL.h"
 
 
-extern void sdl_init();
-extern void sdl_shutdown();
+/* -------------------------------------------------------------------------- *
+ * Function prototypes                                                        *
+ * -------------------------------------------------------------------------- */
+
+extern void ui_sdl_init();
+extern void ui_sdl_shutdown();
 
 #endif /* __SDL_H */

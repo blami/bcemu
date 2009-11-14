@@ -13,15 +13,14 @@
 #include "xgetopt.h"
 
 
-char* prog_name;        /* program executable name */
+static char*    prog_name;      /* program executable name */
 
-char* emu_name;         /* -e: emulator name \see EMU */
-char* ui_name;          /* -u: UI name \see UI */
-char* dbg_name;         /* -d: debugger name \see DBG */
+static char*    emu_name;       /* -e: emulator name \see EMU */
+static char*    ui_name;        /* -u: UI name \see UI */
 
-char* in_file;          /* ROM filename */
+static char*    in_file;        /* ROM filename */
 
-static int main_call = 0;
+static int      main_call = 0;  /* whether bc_emu_main() was called */
 
 /**
  * Print short help message and exit.
@@ -31,9 +30,8 @@ static void print_usage(int exit_code)
 {
 	printf("Usage: bc_emu [options] file\n"
 		"\n"
-		"  -e EMU   force `bc_emu' to use EMU core\n"
-		"  -u UI    force `bc_emu' to use UI frontend\n"
-		"  -d       enable ROM debugger\n"
+		"  -e EMU   force `bc_emu' to use EMU\n"
+		"  -u UI    force `bc_emu' to use UI\n"
 		"  -h       show this message and exit\n"
 		"  -V       show version information and exit\n"
 		"\n"
@@ -136,7 +134,8 @@ static uint8* load_rom(char* filename)
 	buf = xmalloc(size);
 	if(!fread(buf, size, 1, f))
 	{
-		debug("couldn't read file contents, possibly corrupted");
+		debug("couldn't read ROM image file `%s' contents, possibly corrupted",
+			filename);
 		fclose(f);
 		return NULL;
 	}
@@ -144,7 +143,7 @@ static uint8* load_rom(char* filename)
 	/* here we should stop, internal content of ROM should be parsed on
 	 * architecture-independent basis by proper emulator */
 
-	debug("ROM image file read successfully\n");
+	debug("ROM image file `%s' read successfully", filename);
 	fclose(f);
 
 	return buf;
@@ -177,7 +176,7 @@ int main(int argc, char** argv)
 	/* resolve command line arguments */
 	while(1)
 	{
-		int p = getopt(argc, argv, "-hVe:u:d:");
+		int p = getopt(argc, argv, "-hVe:u:");
 		if(p == -1)
 			break;
 
@@ -191,16 +190,11 @@ int main(int argc, char** argv)
 				break;
 			case 'e':
 				emu_name = xstrndup(optarg, strlen(optarg));
-				debug("-e: forced emulator `%s'", optarg);
+				debug("-e: forced to use emulator `%s'", optarg);
 				break;
 			case 'u':
 				ui_name = xstrndup(optarg, strlen(optarg));
-				debug("-u: forced UI frontend `%s'", optarg);
-				break;
-			case 'd':
-				debug("debbuger: %s", optarg);
-				/* FIXME implement */
-				debug("THIS FEATURE IS NOT IMPLEMENTED YET!");
+				debug("-u: forced to use UI `%s'", optarg);
 				break;
 
 			case 1:
@@ -230,7 +224,7 @@ int main(int argc, char** argv)
 	/* invoke architecture independent/safe bc_emu code */
 	/* bc_emu.c */
 	main_call = 1;
-	bc_emu_main(emu_name, ui_name, NULL); /* FIXME implement debugger */
+	bc_emu_main(emu_name, ui_name);
 	/* called from exit_handler():
 	 * bc_emu_exit(); */
 

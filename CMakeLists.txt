@@ -58,6 +58,8 @@ SET(VERSION             "git-${VERSION}")
 SET(BUILD_OS            "${CMAKE_SYSTEM}")
 SET(BUILD_CPU           "${CMAKE_SYSTEM_PROCESSOR}")
 
+# module build mode
+SET(STATIC ON)
 
 ### GLOBAL OPTIONS ###
 # build with debug code

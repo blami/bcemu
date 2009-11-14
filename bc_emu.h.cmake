@@ -37,7 +37,11 @@
 #cmakedefine CODENAME   "@CODENAME@"
 #cmakedefine WIN32
 
-/* build configuration */
+/* modules loading */
+#cmakedefine STATIC     /* modules are compiled-in */
+#cmakedefine DYNAMIC    /* modules are dl'ed (NOT IMPLEMENTED YET!) */
+
+/* modules configuration */
 /* architecture */
 #cmakedefine ARCH       "@ARCH@"
 #cmakedefine ARCH_PC
@@ -73,6 +77,9 @@
 #include "xmalloc.h"
 #include "xtypes.h"
 
+/* common */
+#include "interface.h"
+
 /* build configuration headers */
 /* architecture */
 #ifdef ARCH_PC                  /* PC */
@@ -106,6 +113,12 @@
 #ifdef UI_SDL                   /* SDL user interface */
 #include "ui/sdl/sdl.h"
 #endif /* UI_SDL */
+
+/* -------------------------------------------------------------------------- *
+ * Plugin registry                                                            *
+ * -------------------------------------------------------------------------- */
+
+
 
 /* -------------------------------------------------------------------------- *
  * Globals                                                                    *

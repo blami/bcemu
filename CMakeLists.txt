@@ -11,6 +11,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 PROJECT(bc_emu C)
+SET(CODENAME "akasaka")
 
 ########################################################################
 #                               MODULES                                #
@@ -74,28 +75,29 @@ ENDIF(DEBUG)
 IF(UNIX AND (BUILD_CPU STREQUAL "x86_64"))
 OPTION(BUILD_32BIT      "Build 32bit binary (-m32)"     OFF)
 IF(BUILD_32BIT)
-	MESSAGE(WARNING "You have selected 32bit binary output on x86_64 host. Remember that you will need 32bit versions of devel packages and operating system kernel support")
+	MESSAGE(WARNING "You have selected 32bit binary output on x86_64 host.
+	Remember that you will need 32bit versions of devel packages and operating
+	system kernel support.")
 	SET(LINK_FLAGS "-m32")
 ENDIF(BUILD_32BIT)
 ENDIF(UNIX AND (BUILD_CPU STREQUAL "x86_64"))
 
 # target architecture
-SET(ARCH    "pc_cli"    CACHE STRING "Target architecture")
-IF(ARCH     STREQUAL "pc_cli")
+SET(ARCH    "pc"    CACHE STRING "Target architecture")
+IF(ARCH     STREQUAL "pc")
 	# PC/CLI
-	SET(ARCH_PC_CLI ON)
+	SET(ARCH_PC ON)
 	SET(SRC ${SRC}
-		"arch/pc/pc_cli.c"
-		"arch/pc/getopt.c"
-		"arch/pc/getopt_long.c"
+		"arch/pc/pc.c"
+		"arch/pc/xgetopt.c"
 	)
 ELSEIF(ARCH STREQUAL "nds")
 	# Nintendo DS (tm)
 	MESSAGE(FATAL_ERROR "Architecture not supported yet.")
-ELSE(ARCH   STREQUAL "pc_cli")
+ELSE(ARCH   STREQUAL "pc")
 	# Unknown architecture (error)
-	MESSAGE(FATAL_ERROR "Architecture `${ARCH}' does not exist. See INSTALL.txt")
-ENDIF(ARCH  STREQUAL "pc_cli")
+	MESSAGE(FATAL_ERROR "Architecture `${ARCH}' does not exist. See INSTALL.")
+ENDIF(ARCH  STREQUAL "pc")
 
 
 ### EMULATOR OPTIONS ###
@@ -130,18 +132,18 @@ IF(UI_NULL)
 	SET(UI "null ${UI}")
 ENDIF(UI_NULL)
 
-# SDL
+# SDL (only pc support)
 OPTION(UI_SDL           "Enable SDL user interface"             ON)
-IF(UI_SDL AND (ARCH STREQUAL "pc_cli"))
+IF(UI_SDL AND (ARCH STREQUAL "pc"))
 	SET(UI "sdl ${UI}")
 	FIND_PACKAGE(SDL REQUIRED)
 	ADD_LIBRARY(ui_sdl STATIC
 		ui/sdl/sdl.c
 	)
 	SET(LIBS ${LIBS} ${SDL_LIBRARY} ui_sdl)
-ELSEIF(UI_SDL AND NOT (ARCH STREQUAL "pc_cli"))
+ELSEIF(UI_SDL AND NOT (ARCH STREQUAL "pc"))
 	MESSAGE(WARNING "SDL not supported on this architecture. Disabled.")
-ENDIF(UI_SDL AND (ARCH STREQUAL "pc_cli"))
+ENDIF(UI_SDL AND (ARCH STREQUAL "pc"))
 
 
 ### CONFIGURATION OUTPUT ###

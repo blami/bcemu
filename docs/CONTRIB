@@ -1,0 +1,13 @@
+This file contains list of contribution (3rd-party) projects used in bc_emu.
+
+	* debug.h: debugging macros
+		Author: Ondrej Balaz, <ondra@blami.net>
+		License: GNU/GPLv2
+
+	* xmalloc.c, xmalloc.h: memory allocation wrappers
+		Author: Ondrej Balaz, <ondra@blami.net>
+		License: GNU/GPLv2
+
+	* BSD getopt: command line parser from BSD
+		Author: The Regents of the University of California
+		License: BSD

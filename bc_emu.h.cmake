@@ -16,6 +16,8 @@
  * WARNING:
  * don't modify this file directly (bc_emu.h). This file is generated from
  * `bc_emu.h.cmake' by CMake build system.
+ *
+ * Also don't forget add your module definition into bc_emu_modules.c
  */
 
 /* -------------------------------------------------------------------------- *
@@ -37,24 +39,16 @@
 #cmakedefine CODENAME   "@CODENAME@"
 #cmakedefine WIN32
 
-/* modules loading */
-#cmakedefine STATIC     /* modules are compiled-in */
-#cmakedefine DYNAMIC    /* modules are dl'ed (NOT IMPLEMENTED YET!) */
-
-/* modules configuration */
 /* architecture */
 #cmakedefine ARCH       "@ARCH@"
 #cmakedefine ARCH_PC
 #cmakedefine ARCH_NDS
 
+/* modules configuration */
 /* emulator */
 #cmakedefine EMU        "@EMU@"
 #cmakedefine EMU_NULL   /* null emulator (debug) */
 #cmakedefine EMU_PCE    /* NEC PCEngine emulator */
-
-/* debugger */
-#cmakedefine DBG        "@DBG@"
-#cmakedefine DBG_NULL   /* null debugger (debug) */
 
 /* ui */
 #cmakedefine UI         "@UI@"
@@ -71,16 +65,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>             /* assert() */
 
 /* common helpers */
 #include "debug.h"
 #include "xmalloc.h"
 #include "xtypes.h"
 
-/* common */
-#include "interface.h"
-
-/* build configuration headers */
 /* architecture */
 #ifdef ARCH_PC                  /* PC */
 #include "arch/pc/pc.h"
@@ -91,6 +82,10 @@
 #include "arch/nds/nds-arm9.h"
 #endif /* ARCH_NDS */
 
+/* modules */
+#include "module.h"             /* module interface */
+
+/* module-specific headers */
 /* emulator */
 #ifdef EMU_NULL                 /* NULL emulator (debug) */
 #include "emu/null/null.h"
@@ -99,11 +94,6 @@
 #ifdef EMU_PCE                  /* NEC PCEngine emulator */
 #include "emu/pce/pce.h"
 #endif /* EMU_PCE */
-
-/* debugger */
-#ifdef DBG_NULL                 /* NULL debugger (debug) */
-#include "dbg/dbg_null/null.h"
-#endif /* DBG_NULL */
 
 /* user interface */
 #ifdef UI_NULL                  /* NULL user interface (debug) */
@@ -115,23 +105,20 @@
 #endif /* UI_SDL */
 
 /* -------------------------------------------------------------------------- *
- * Plugin registry                                                            *
- * -------------------------------------------------------------------------- */
-
-
-
-/* -------------------------------------------------------------------------- *
  * Globals                                                                    *
  * -------------------------------------------------------------------------- */
 
-extern uint8* bc_emu_rom;       /* pointer to ROM image */
+extern uint8*   bc_emu_rom;       /* pointer to ROM image */
 
+/* bc_emu_modules.c */
+extern t_emu    bc_emu_modules_emu[];
+extern t_ui     bc_emu_modules_ui[];
 
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
-extern int bc_emu_main(char*, char*, char*);
-extern void bc_emu_exit();
+extern int      bc_emu_main(char*, char*);
+extern void     bc_emu_exit();
 
 #endif /* __BC_EMU_H */

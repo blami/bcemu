@@ -28,12 +28,32 @@ uint8* bc_emu_rom = NULL;
  * Architecture-independent main() called from main() or its equivalent.
  * \param emu_name          emulator name
  * \param ui_name           UI frontend name
- * \param dbg_name          debugger name
  * \returns                 1 if exited normally, otherwise 0
  */
-int bc_emu_main(char* emu_name, char* ui_name, char* dbg_name)
+int bc_emu_main(char* emu_name, char* ui_name)
 {
-	debug("entering bc_emu main-loop...");
+	debug("entering bc_emu main...");
+
+	/* initialize emulator */
+	emu = modules_emu_find(emu_name);
+	/* FIXME: asserts here should be handled by arch-dep error handler */
+	assert(emu);
+	assert(emu->init && emu->shutdown);
+
+	/* initialize UI */
+	ui = modules_ui_find(ui_name);
+	/* FIXME: asserts here should be handled by arch-dep error handler */
+	assert(ui);
+	assert(ui->init && ui->shutdown);
+
+	ui->init();
+
+	/* application main-loop */
+	debug("entering main-loop...");
+	sleep(10);
+
+	/* shutdown ui */
+	ui->shutdown();
 
 	return 1;
 }
@@ -43,7 +63,7 @@ int bc_emu_main(char* emu_name, char* ui_name, char* dbg_name)
  */
 void bc_emu_exit()
 {
-	debug("exiting bc_emu main-loop...");
+	debug("exiting bc_emu main...");
 
 	/* cleanup memory */
 	if(bc_emu_rom != NULL)

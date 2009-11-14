@@ -11,7 +11,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 PROJECT(bc_emu C)
-SET(CODENAME "akasaka")
+SET(CODENAME "cinnamon")
 
 ########################################################################
 #                               MODULES                                #
@@ -24,6 +24,8 @@ INCLUDE (TestBigEndian)
 # source files:
 SET(SRC
 	bc_emu.c
+	${CMAKE_BINARY_DIR}/bc_emu_modules.c
+	module.c
 	xmalloc.c
 )
 # library files:
@@ -57,9 +59,6 @@ SET(VERSION             "git-${VERSION}")
 # build environment
 SET(BUILD_OS            "${CMAKE_SYSTEM}")
 SET(BUILD_CPU           "${CMAKE_SYSTEM_PROCESSOR}")
-
-# module build mode
-SET(STATIC ON)
 
 ### GLOBAL OPTIONS ###
 # build with debug code
@@ -153,6 +152,12 @@ ENDIF(UI_SDL AND (ARCH STREQUAL "pc"))
 CONFIGURE_FILE(
 	${CMAKE_SOURCE_DIR}/bc_emu.h.cmake
 	${CMAKE_BINARY_DIR}/bc_emu.h
+	@ONLY
+)
+# modules configuration (bc_emu_modules.c)
+CONFIGURE_FILE(
+	${CMAKE_SOURCE_DIR}/bc_emu_modules.c.cmake
+	${CMAKE_BINARY_DIR}/bc_emu_modules.c
 	@ONLY
 )
 

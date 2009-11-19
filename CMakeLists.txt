@@ -103,36 +103,20 @@ ENDIF(ARCH  STREQUAL "pc")
 
 ### EMULATOR OPTIONS ###
 SET(EMU)
-# null
-OPTION(EMU_NULL         "Enable null emulator (debug)"          OFF)
-IF(EMU_NULL)
-	SET(EMU "null ${EMU}")
-ENDIF(EMU_NULL)
-
 # NEC PCEngine
 OPTION(EMU_PCE          "Enable NEC PCEngine emulator"          ON)
 IF(EMU_PCE)
 	SET(EMU "pce ${EMU}")
+	ADD_LIBRARY(emu_pce STATIC
+		emu/pce/pce.c
+		emu/pce/cpu_huc6280.c
+	)
+	SET(LIBS ${LIBS} ${SDL_LIBRARY} emu_pce)
 ENDIF(EMU_PCE)
-
-
-### DEBUGGER TOOL OPTIONS ###
-SET(DBG)
-# null
-OPTION(DBG_NULL         "Enable null debugger (debug)"          OFF)
-IF(DBG_NULL)
-	SET(DBG "null ${DBG}")
-ENDIF(DBG_NULL)
 
 
 ### USER INTERFACE OPTIONS ###
 SET(UI)
-# null
-OPTION(UI_NULL          "Enable null user interface (debug)"    OFF)
-IF(UI_NULL)
-	SET(UI "null ${UI}")
-ENDIF(UI_NULL)
-
 # SDL (only pc support)
 OPTION(UI_SDL           "Enable SDL user interface"             ON)
 IF(UI_SDL AND (ARCH STREQUAL "pc"))

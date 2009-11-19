@@ -36,6 +36,7 @@ typedef union {
 	struct { uint16 h,l; } w;
 #endif
 	uint32 d;
+
 } pair;
 
 #endif /* _XTYPES_H */

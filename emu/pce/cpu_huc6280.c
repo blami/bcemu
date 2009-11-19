@@ -8,14 +8,16 @@
 
 /* cpu_huc6280.c: HuC6280 CPU emulator */
 
-#include "bc_pce.h"
-#include "cpu_huc6280.h"
+#include "bc_emu.h"
+
 
 t_pce_cpu* pce_cpu = NULL;
 
-/* opcodes */
-#include "cpu_op_helper.h"
+/* opcode implementation */
+#include "cpu_op_util.h"
 #include "cpu_op.h"
+
+/* opcode table */
 #include "cpu_op_tab.inc"
 
 
@@ -30,7 +32,7 @@ int pce_cpu_init()
 {
 	debug("CPU init");
 
-	pce_cpu = xmalloc(sizeof(t_emu_pce_cpu));
+	pce_cpu = xmalloc(sizeof(t_pce_cpu));
 	pce_cpu_reset();
 
 	return 1;
@@ -54,7 +56,7 @@ void pce_cpu_reset()
 	pce_cpu->sp.d = 0x1ff;
 
 	PCL = RDMEM(INT_VEC_RESET);
-	PCH = RDMEM((INT_VEC_RESET)+1));
+	PCH = RDMEM((INT_VEC_RESET+1));
 
 	/* setup timer */
 	pce_cpu->timer_status = 0;
@@ -98,13 +100,13 @@ int pce_cpu_exec(int cycles)
 	int in, last, delta;
 
 	debug("CPU exec cycles=%d", cycles);
-	assert(pce_cpu);
+	assert(pce && pce_cpu);
 
 	/* store cycles count */
 	pce_cpu->cycle_count = cycles;
 
 	/* remove extra cycles taken by irq */
-	pce_cpu->cycle_count -= emu_pce_cpu.extra_cycles;
+	pce_cpu->cycle_count -= pce_cpu->extra_cycles;
 	pce_cpu->extra_cycles = 0;
 
 	last = pce_cpu->cycle_count;
@@ -123,7 +125,7 @@ int pce_cpu_exec(int cycles)
 		/* process timer */
 		if(pce_cpu->timer_status)
 		{
-			delta = last - pce->cycle_count;
+			delta = last - pce_cpu->cycle_count;
 			pce_cpu->timer_value -= delta;
 
 			if(pce_cpu->timer_value <= 0 && pce_cpu->timer_ack == 1)
@@ -136,15 +138,15 @@ int pce_cpu_exec(int cycles)
 
 		if( pce_cpu->pc.d == pce_cpu->ppc.d )
 		{
-			if (pce->cycle_count > 0) pce->cycle_count=0;
+			if (pce_cpu->cycle_count > 0) pce_cpu->cycle_count=0;
 			pce_cpu->extra_cycles = 0;
 			return cycles;
 		}
 
-	} while (pce->cycle_count > 0);
+	} while (pce_cpu->cycle_count > 0);
 
-	/* cycles taken by irq */
-	pce->cycle_count -= pce_cpu->extra_cycles;
+	/* cycles taken by irqs */
+	pce_cpu->cycle_count -= pce_cpu->extra_cycles;
 	pce_cpu->extra_cycles = 0;
 
 	return cycles - pce_cpu->cycle_count;
@@ -157,6 +159,8 @@ int pce_cpu_exec(int cycles)
  */
 unsigned int pce_cpu_reg_r(int name)
 {
+	assert(pce && pce_cpu);
+
 	switch(name)
 	{
 		/* general */
@@ -210,6 +214,8 @@ unsigned int pce_cpu_reg_r(int name)
  */
 void pce_cpu_reg_w(int name, unsigned int value)
 {
+	assert(pce && pce_cpu);
+
 	switch(name)
 	{
 		/* general */
@@ -239,16 +245,16 @@ void pce_cpu_reg_w(int name, unsigned int value)
 			pce_cpu->timer_status = value;
 			break;
 		case CPU_NMI_STATE:
-			h6280_set_nmi_line(value);
+			pce_cpu_set_nmi_line(value);
 			break;
 		case CPU_IRQ1_STATE:
-			h6280_set_irq_line(0, value);
+			pce_cpu_set_irq_line(0, value);
 			break;
 		case CPU_IRQ2_STATE:
-			h6280_set_irq_line(1, value);
+			pce_cpu_set_irq_line(1, value);
 			break;
 		case CPU_IRQT_STATE:
-			h6280_set_irq_line(2, value);
+			pce_cpu_set_irq_line(2, value);
 			break;
 
 		/* offset */
@@ -277,6 +283,8 @@ void pce_cpu_reg_w(int name, unsigned int value)
  */
 void pce_cpu_set_nmi_line(int state)
 {
+	assert(pce && pce_cpu);
+
 	if(pce_cpu->nmi_state == state)
 		return;
 
@@ -284,7 +292,7 @@ void pce_cpu_set_nmi_line(int state)
 
 	if(state != CLEAR_LINE)
 	{
-		DO_INTERRUPT(INT_NMI_VEC);
+		DO_INTERRUPT(INT_VEC_NMI);
 	}
 }
 
@@ -295,6 +303,8 @@ void pce_cpu_set_nmi_line(int state)
  */
 void pce_cpu_set_irq_line(int irqline, int state)
 {
+	assert(pce && pce_cpu);
+
 	pce_cpu->irq_state[irqline] = state;
 
 	if(state == CLEAR_LINE)
@@ -332,6 +342,8 @@ static int pce_cpu_irq_r(int offset)
 {
 	int status;
 
+	assert(pce && pce_cpu);
+
 	switch(offset)
 	{
 		case 0:
@@ -354,6 +366,8 @@ static int pce_cpu_irq_r(int offset)
  */
 static void pce_cpu_irq_w(int offset, int data)
 {
+	assert(pce && pce_cpu);
+
 	switch(offset)
 	{
 		case 0:
@@ -373,6 +387,8 @@ static void pce_cpu_irq_w(int offset, int data)
  */
 static int pce_cpu_timer_r(int offset)
 {
+	assert(pce && pce_cpu);
+
 	switch(offset) 
 	{
 		case 0:
@@ -391,10 +407,13 @@ static int pce_cpu_timer_r(int offset)
  */
 static void pce_cpu_timer_w(int offset, int data)
 {
+	assert(pce && pce_cpu);
+
 	switch(offset)
 	{
 		case 0:
-			pce_cpu->timer_load = pce_cpu->timer_value = ((data & 127)+1) * 1024;
+			pce_cpu->timer_load = pce_cpu->timer_value =
+				((data & 127) + 1) * 1024;
 			return;
 		case 1:
 			if(data&1)
@@ -414,8 +433,10 @@ static void pce_cpu_timer_w(int offset, int data)
  */
 static void pce_cpu_input_w(uint8 data)
 {
+	/*
 	joy_sel = (data & 1);
 	joy_clr = (data >> 1) & 1;
+	*/
 }
 
 /**
@@ -428,6 +449,7 @@ static uint8 pce_cpu_input_r()
 	uint8 temp = 0xFF;
 
 	/* decode data and setup masks */
+	/*
 	if(input.pad[joy_cnt] & INPUT_LEFT)   temp &= ~0x80;
 	if(input.pad[joy_cnt] & INPUT_DOWN)   temp &= ~0x40;
 	if(input.pad[joy_cnt] & INPUT_RIGHT)  temp &= ~0x20;
@@ -439,7 +461,7 @@ static uint8 pce_cpu_input_r()
 
 	if(joy_sel & 1) temp >>= 4;
 	temp &= 0x0F;
-
+	*/
 	return temp;
 }
 
@@ -452,15 +474,17 @@ static uint8 pce_cpu_input_r()
  */
 static int pce_cpu_iopage_r(int address)
 {
+	assert(pce && pce_cpu);
+
 	switch(address & 0x1C00)
 	{
 		case 0x0000: /* VDC */
 			if(address <= 0x0003)
-				return vdc_r(address);
+				return 0x00;//FIXME vdc_r(address);
 			break;
 		case 0x0400: /* VCE */
 			if(address <= 0x0405)
-				return vce_r(address);
+				return 0x00;//FIXME vce_r(address);
 			break;
 		case 0x0800: /* PSG */
 			break;
@@ -479,7 +503,7 @@ static int pce_cpu_iopage_r(int address)
 	}
 
 	debug("CPU UNKNOWN iopage/read %04X (PC:%08X)", address,
-		pce_cpu_get_reg(CPU_PC));
+		pce_cpu_reg_r(CPU_PC));
 	return (0x00);
 }
 
@@ -492,26 +516,28 @@ static int pce_cpu_iopage_r(int address)
  */
 static void pce_cpu_iopage_w(int address, int data)
 {
+	assert(pce && pce_cpu);
+
 	switch(address & 0x1C00)
 	{
 		case 0x0000: /* VDC */
 			if(address <= 0x0003)
 			{
-				vdc_w(address, data);
+				//FIXME vdc_w(address, data);
 				return;
 			}
 			break;
 		case 0x0400: /* VCE */
 			if(address <= 0x0405)
 			{
-				vce_w(address, data);
+				//FIXME vce_w(address, data);
 				return;
 			}
 			break;
 		case 0x0800: /* PSG */
 			if(address <= 0x0809)
 			{
-				psg_w(address, data);
+				//FIXME psg_w(address, data);
 				return;
 			};
 			break;
@@ -539,7 +565,7 @@ static void pce_cpu_iopage_w(int address, int data)
 	}
 
 	debug("CPU UNKNOWN iopage/write %02X: %04X (PC:%08X)", data, address,
-		pce_cpu_get_reg(CPU_PC));
+		pce_cpu_reg_r(CPU_PC));
 }
 
 /**
@@ -551,26 +577,28 @@ int pce_cpu_mem_r(int address)
 {
 	uint8 page;
 
+	assert(pce && pce_cpu);
+
 	/* lower ROM */
 	if(address <= 0x0FFFFF)
-		return pce_rom[(address)];
+		return pce->rom[(address)];
 
 	page = (address >> 13) & 0xFF;
 
 	/* ROM */
 	if(page <= 0x7F)
-		return pce_rom[(address)];
+		return pce->rom[(address)];
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
-		return pce_ram[(address & 0x7FFF)];
+		return pce->ram[(address & 0x7FFF)];
 
 	/* I/O */
 	if(page == 0xFF)
 		return pce_cpu_iopage_r(address & 0x1FFF);
 
 	debug("CPU UNKNOWN read %02X:%04X (PC:%08X)", page, address & 0x1FFFF,
-		pce_cpu_get_reg(CPU_PC));
+		pce_cpu_reg_r(CPU_PC));
 	return (0xFF);
 }
 
@@ -583,10 +611,12 @@ void pce_cpu_mem_w(int address, int data)
 {
 	uint8 page = (address >> 13) & 0xFF;
 
+	assert(pce && pce_cpu);
+
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
 	{
-		pce_ram[(address & 0x7FFF)] = data;
+		pce->ram[(address & 0x7FFF)] = data;
 		return;
 	}
 
@@ -598,5 +628,5 @@ void pce_cpu_mem_w(int address, int data)
 	}
 
 	debug("CPU UNKNOWN write %02X: %02X:%04X (PC:%08X)", data, page,
-		address & 0x1FFFF, pce_cpu_get_reg(CPU_PC));
+		address & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 }

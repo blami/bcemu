@@ -7,10 +7,6 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-#ifndef __PCE_CPU_OP_H
-#define __PCE_CPU_OP_H
-
-
 /* cpu_op.h: HuC6280 CPU opcode set implementation */
 
 /*
@@ -18,6 +14,10 @@
  * are widely used macros from cpu_huc6280.h and variables `arg1' and `arg2'.
  * They must be defined in any place where these stub-generators are used.
  */
+
+#ifndef __PCE_CPU_OP_H
+#define __PCE_CPU_OP_H
+
 
 /* -------------------------------------------------------------------------- *
  * Flag helpers                                                               *
@@ -55,7 +55,7 @@
             P |= _pV;                                            \
         if (sum & 0xff00)                                        \
             P |= _pC;                                            \
-        A = (UINT8) sum;                                        \
+        A = (uint8) sum;                                        \
     }                                                            \
     SET_NZ(A)
 
@@ -63,7 +63,7 @@
  *    AND Logical and
  ***************************************************************/
 #define AND                                                     \
-    A = (UINT8)(A & arg1);                                        \
+    A = (uint8)(A & arg1);                                        \
     SET_NZ(A)
 
 /* 6280 ********************************************************
@@ -71,7 +71,7 @@
  ***************************************************************/
 #define ASL                                                     \
     P = (P & ~_pC) | ((arg1 >> 7) & _pC);                        \
-    arg1 = (UINT8)(arg1 << 1);                                    \
+    arg1 = (uint8)(arg1 << 1);                                    \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
@@ -136,8 +136,8 @@
     PUSH(PCL);                                                    \
     PUSH(P | _pB);                                                \
     P = (P & ~_pD) | _pI;                                        \
-    PCL = RDMEM(H6280_IRQ2_VEC);                                 \
-    PCH = RDMEM(H6280_IRQ2_VEC+1)
+    PCL = RDMEM(INT_VEC_IRQ2);                                 \
+    PCH = RDMEM(INT_VEC_IRQ2+1)
 
 /* 6280 ********************************************************
  *    BSR Branch to subroutine
@@ -145,7 +145,7 @@
 #define BSR                                                     \
     PUSH(PCH);                                                    \
     PUSH(PCL);                                                    \
-    pce_cpu->cycles -= 4; /* 4 cycles here, 4 in BRA */            \
+    pce_cpu->cycle_count -= 4; /* 4 cycles here, 4 in BRA */            \
     BRA(1)
 
 /* 6280 ********************************************************
@@ -212,7 +212,7 @@
     P &= ~_pC;                                                    \
     if (A >= arg1)                                                \
         P |= _pC;                                                \
-    SET_NZ((UINT8)(A - arg1))
+    SET_NZ((uint8)(A - arg1))
 
 /* 6280 ********************************************************
  *    CPX Compare index X
@@ -221,7 +221,7 @@
     P &= ~_pC;                                                    \
     if (X >= arg1)                                                \
         P |= _pC;                                                \
-    SET_NZ((UINT8)(X - arg1))
+    SET_NZ((uint8)(X - arg1))
 
 /* 6280 ********************************************************
  *    CPY Compare index Y
@@ -230,75 +230,75 @@
     P &= ~_pC;                                                    \
     if (Y >= arg1)                                                \
         P |= _pC;                                                \
-    SET_NZ((UINT8)(Y - arg1))
+    SET_NZ((uint8)(Y - arg1))
 
 /* 6280 ********************************************************
  *  DEA Decrement accumulator
  ***************************************************************/
 #define DEA                                                     \
-    A = (UINT8)--A;                                             \
+    A = (uint8)--A;                                             \
     SET_NZ(A)
 
 /* 6280 ********************************************************
  *    DEC Decrement memory
  ***************************************************************/
 #define DEC                                                     \
-    arg1 = (UINT8)--arg1;                                         \
+    arg1 = (uint8)--arg1;                                         \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
  *    DEX Decrement index X
  ***************************************************************/
 #define DEX                                                     \
-    X = (UINT8)--X;                                             \
+    X = (uint8)--X;                                             \
     SET_NZ(X)
 
 /* 6280 ********************************************************
  *    DEY Decrement index Y
  ***************************************************************/
 #define DEY                                                     \
-    Y = (UINT8)--Y;                                             \
+    Y = (uint8)--Y;                                             \
     SET_NZ(Y)
 
 /* 6280 ********************************************************
  *    EOR Logical exclusive or
  ***************************************************************/
 #define EOR                                                     \
-    A = (UINT8)(A ^ arg1);                                        \
+    A = (uint8)(A ^ arg1);                                        \
     SET_NZ(A)
 
 /* 6280 ********************************************************
  *    ILL Illegal opcode
  ***************************************************************/
 #define ILL                                                     \
-    pce_cpu->cycles -= 2; /* (assumed) */                          
+    pce_cpu->cycle_count -= 2; /* (assumed) */                          
 
 /* 6280 ********************************************************
  *  INA Increment accumulator
  ***************************************************************/
 #define INA                                                     \
-    A = (UINT8)++A;                                             \
+    A = (uint8)++A;                                             \
     SET_NZ(A)
 
 /* 6280 ********************************************************
  *    INC Increment memory
  ***************************************************************/
 #define INC                                                     \
-    arg1 = (UINT8)++arg1;                                         \
+    arg1 = (uint8)++arg1;                                         \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
  *    INX Increment index X
  ***************************************************************/
 #define INX                                                     \
-    X = (UINT8)++X;                                             \
+    X = (uint8)++X;                                             \
     SET_NZ(X)
 
 /* 6280 ********************************************************
  *    INY Increment index Y
  ***************************************************************/
 #define INY                                                     \
-    Y = (UINT8)++Y;                                             \
+    Y = (uint8)++Y;                                             \
     SET_NZ(Y)
 
 /* 6280 ********************************************************
@@ -323,21 +323,21 @@
  *    LDA Load accumulator
  ***************************************************************/
 #define LDA                                                     \
-    A = (UINT8)arg1;                                             \
+    A = (uint8)arg1;                                             \
     SET_NZ(A)
 
 /* 6280 ********************************************************
  *    LDX Load index X
  ***************************************************************/
 #define LDX                                                     \
-    X = (UINT8)arg1;                                             \
+    X = (uint8)arg1;                                             \
     SET_NZ(X)
 
 /* 6280 ********************************************************
  *    LDY Load index Y
  ***************************************************************/
 #define LDY                                                     \
-    Y = (UINT8)arg1;                                             \
+    Y = (uint8)arg1;                                             \
     SET_NZ(Y)
 
 /* 6280 ********************************************************
@@ -346,7 +346,7 @@
  ***************************************************************/
 #define LSR                                                     \
     P = (P & ~_pC) | (arg1 & _pC);                                \
-    arg1 = (UINT8)arg1 >> 1;                                        \
+    arg1 = (uint8)arg1 >> 1;                                        \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
@@ -358,7 +358,7 @@
  *    ORA Logical inclusive or
  ***************************************************************/
 #define ORA                                                     \
-    A = (UINT8)(A | arg1);                                        \
+    A = (uint8)(A | arg1);                                        \
     SET_NZ(A)
 
 /* 6280 ********************************************************
@@ -425,7 +425,7 @@
 #define ROL                                                     \
     arg1 = (arg1 << 1) | (P & _pC);                                \
     P = (P & ~_pC) | ((arg1 >> 8) & _pC);                        \
-    arg1 = (UINT8)arg1;                                            \
+    arg1 = (uint8)arg1;                                            \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
@@ -435,7 +435,7 @@
 #define ROR                                                     \
     arg1 |= (P & _pC) << 8;                                        \
     P = (P & ~_pC) | (arg1 & _pC);                                \
-    arg1 = (UINT8)(arg1 >> 1);                                    \
+    arg1 = (uint8)(arg1 >> 1);                                    \
     SET_NZ(arg1)
 
 /* 6280 ********************************************************
@@ -505,7 +505,7 @@
             P |= _pV;                                            \
         if ((sum & 0xff00) == 0)                                \
             P |= _pC;                                            \
-        A = (UINT8) sum;                                        \
+        A = (uint8) sum;                                        \
     }                                                            \
     SET_NZ(A)
 
@@ -550,7 +550,7 @@
     op = RDOP(); /* Get next instruction */                     \
     if((op & 0x9F) == 0x09)                                     \
     {                                                           \
-        UINT8 acc;                                              \
+        uint8 acc;                                              \
         PCW++;                                                  \
         arg1 = RDOPARG(); /* Immediate operand */                \
         PCW++;                                                  \
@@ -558,9 +558,9 @@
                                                                 \
         switch(op)                                              \
         {                                                       \
-            case 0x09: acc = (UINT8)(acc | arg1); break; /* ORA */ \
-            case 0x29: acc = (UINT8)(acc & arg1); break; /* AND */ \
-            case 0x49: acc = (UINT8)(acc ^ arg1); break; /* EOR */ \
+            case 0x09: acc = (uint8)(acc | arg1); break; /* ORA */ \
+            case 0x29: acc = (uint8)(acc & arg1); break; /* AND */ \
+            case 0x49: acc = (uint8)(acc ^ arg1); break; /* EOR */ \
             case 0x69: /* ADC */                                \
                 if(P & _pD)                                     \
                 {                                               \
@@ -583,14 +583,14 @@
                         P |= _pV;                               \
                     if (sum & 0xff00)                           \
                         P |= _pC;                               \
-                    acc = (UINT8) sum;                          \
+                    acc = (uint8) sum;                          \
                 }                                               \
                 break;                                          \
         }                                                       \
                                                                 \
         SET_NZ(acc);        /* Update flags */                  \
         WRMEMZ(X, acc);     /* Write result back */             \
-        pce_cpu->cycles -= 6;  /* Unsure of actual cycles used */  \
+        pce_cpu->cycle_count -= 6;  /* Unsure of actual cycles used */  \
     }                                                           \
     P &= ~_pT;                                                  \
 }                                                               
@@ -602,13 +602,13 @@
  *  CSL Clock select low
  ***************************************************************/
 #define CSL             \
-    h6280_speed = 0
+    pce_cpu->speed = 0
 
 /* 6280 ********************************************************
  *  CSL Clock select high
  ***************************************************************/
 #define CSH             \
-    h6280_speed = 1    
+    pce_cpu->speed = 1    
 
 /* 6280 ********************************************************
  *  SMB Set memory bit
@@ -619,20 +619,20 @@
 /* 6280 ********************************************************
  *  ST0 Store at hardware address 0
  ***************************************************************/
-#define ST0                                                     \
-    cpu_writeport16(0x0000,arg1)
+#define ST0                                                     
+    //FIXME cpu_writeport16(0x0000,arg1)
 
 /* 6280 ********************************************************
  *  ST1 Store at hardware address 2
  ***************************************************************/
-#define ST1                                                     \
-    cpu_writeport16(0x0002,arg1)
+#define ST1                                                     
+    //FIXME cpu_writeport16(0x0002,arg1)
 
 /* 6280 ********************************************************
  *  ST2 Store at hardware address 3
  ***************************************************************/
-#define ST2                                                     \
-    cpu_writeport16(0x0003,arg1)
+#define ST2                                                     
+    //FIXME cpu_writeport16(0x0003,arg1)
 
 /* 6280 ********************************************************
  *    STA Store accumulator
@@ -680,7 +680,7 @@
         to++;                                                     \
         alternate ^= 1;                                         \
     }                                                             \
-    pce_cpu->cycles-=(6 * length) + 17;
+    pce_cpu->cycle_count-=(6 * length) + 17;
 
 /* H6280 *******************************************************
  *  TAM Transfer accumulator to memory mapper register(s)
@@ -723,7 +723,7 @@
         to--;                                                     \
         from--;                                                    \
     }                                                             \
-    pce_cpu->cycles-=(6 * length) + 17;
+    pce_cpu->cycle_count-=(6 * length) + 17;
 
 /* 6280 ********************************************************
  *  TIA
@@ -739,7 +739,7 @@
         from++;                                                 \
         alternate ^= 1;                                         \
     }                                                             \
-    pce_cpu->cycles-=(6 * length) + 17;
+    pce_cpu->cycle_count-=(6 * length) + 17;
 
 /* 6280 ********************************************************
  *  TII
@@ -754,7 +754,7 @@
         to++;                                                     \
         from++;                                                    \
     }                                                             \
-    pce_cpu->cycles-=(6 * length) + 17;
+    pce_cpu->cycle_count-=(6 * length) + 17;
 
 /* 6280 ********************************************************
  *  TIN Transfer block, source increments every loop
@@ -768,7 +768,7 @@
         WRMEM(to,RDMEM(from));                                     \
         from++;                                                    \
     }                                                             \
-    pce_cpu->cycles-=(6 * length) + 17;
+    pce_cpu->cycle_count-=(6 * length) + 17;
 
 /* 6280 ********************************************************
  *  TMA Transfer memory mapper register(s) to accumulator

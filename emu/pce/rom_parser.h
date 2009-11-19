@@ -6,55 +6,16 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* pce.c: NEC PCEngine emulator. */
-
-#include "bc_emu.h"
+/* rom_parser.h: NEC PCEngine ROM parser */
 
 
-t_pce* pce;
+#ifndef __ROM_PARSER_H_
+#define __ROM_PARSER_H_
 
 /* -------------------------------------------------------------------------- *
- * Init, shutdown, reset routines                                             *
+ * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
-/**
- * Initialize PCE emulator.
- */
-int pce_init(t_video* video, t_audio* audio)
-{
-	debug("PCE init");
-	assert(video);
-	assert(audio);
+extern int  pce_rom_parse();
 
-	pce = xmalloc(sizeof(t_pce));
-	memset(pce, 0, sizeof(t_pce));
-
-	/* initialize emulator subsystems */
-	pce_rom_parse();
-	pce_cpu_init();
-
-	return 1;
-}
-
-/**
- * Shutdown PCE emulator.
- */
-void pce_shutdown()
-{
-	debug("PCE shutdown");
-	assert(pce);
-
-	/* shutdown emulator subsystems */
-	pce_cpu_shutdown();
-
-	/* clean pce */
-	xfree(pce);
-}
-
-/**
- * Reset PCE emulator.
- */
-void pce_reset()
-{
-
-}
+#endif /* __ROM_H_ */

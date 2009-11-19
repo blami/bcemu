@@ -56,21 +56,16 @@ typedef struct
  * -------------------------------------------------------------------------- */
 
 /*
- * Cycles count (especially cpu_op_tab.inc)
- */
-#define cycle_count     pce_cpu->cycle_count
-
-/*
  * Status register (P) flag indexes.
  */
-#define _pC             0x01;       /**< carry flag */
-#define _pZ             0x02;       /**< zero flag */
-#define _pI             0x04;       /**< interrupt disable flag */
-#define _pD             0x08;       /**< decimal mode flag */
-#define _pB             0x10;       /**< break flag */
-#define _pT             0x20;       /**< accumulator-ish mode (no clue what t means ???) */
-#define _pV             0x40;       /**< overflow */
-#define _pN             0x80;       /**< negative */
+#define _pC             0x01        /**< carry flag */
+#define _pZ             0x02        /**< zero flag */
+#define _pI             0x04        /**< interrupt disable flag */
+#define _pD             0x08        /**< decimal mode flag */
+#define _pB             0x10        /**< break flag */
+#define _pT             0x20        /**< accumulator-ish mode (no clue what t means ???) */
+#define _pV             0x40        /**< overflow */
+#define _pN             0x80        /**< negative */
 
 /*
  * Registry shortcuts.
@@ -142,9 +137,16 @@ enum
 #define REG_SP_CONTENTS -2          /**< stack pointer counter */
 
 /* -------------------------------------------------------------------------- *
+ * Globals                                                                    *
+ * -------------------------------------------------------------------------- */
+
+extern t_pce_cpu*   pce_cpu;
+
+/* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
+extern int          pce_cpu_init();
 extern void         pce_cpu_reset();
 extern void         pce_cpu_shutdown();
 extern int          pce_cpu_exec(int);
@@ -154,14 +156,16 @@ extern void         pce_cpu_reg_w(int, unsigned int);
 
 extern void         pce_cpu_set_nmi_line(int);
 extern void         pce_cpu_set_irq_line(int, int);
-extern void         pce_cpu_set_irq_callback(int (*)(int));
-
-extern int          pce_cpu_irq_r(int);
-extern void         pce_cpu_irq_w(int, int);
-extern int          pce_cpu_timer_r(int);
-extern void         pce_cpu_timer_w(int, int);
 
 extern int          pce_cpu_mem_r(int);
 extern void         pce_cpu_mem_w(int, int);
+
+static void         pce_cpu_set_irq_callback(int (*)(int));
+static int          pce_cpu_irq_callback(int);
+
+static int          pce_cpu_irq_r(int);
+static void         pce_cpu_irq_w(int, int);
+static int          pce_cpu_timer_r(int);
+static void         pce_cpu_timer_w(int, int);
 
 #endif /* __PCE_CPU_HUC6280_H */

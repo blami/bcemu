@@ -17,39 +17,37 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Structure holding emulator module.
+ * Emulator module.
  */
-typedef struct struct_mod_emu
+typedef struct
 {
-	char* id;               /* emulator identifier (e.g. pce) */
+	char* id;                   /* emulator identifier (e.g. pce) */
 
-	int (*init)();
-	int (*shutdown)();
+	int (*init)(void*, void*);
+	void (*shutdown)(); 
+
 } t_emu;
 
 /**
- * Structure holding UI module.
+ * UI module.
  */
-typedef struct struct_mod_ui
+typedef struct
 {
-	char* id;               /* UI identifier (e.g. sdl) */
+	char* id;                   /* UI identifier (e.g. sdl) */
 
 	int (*init)();
-	int (*shutdown)();
+	void (*shutdown)();
+	void (*update_audio)();
+	void (*update_video)();
+	void (*update_input)(void*);
+
 } t_ui;
-
-/* -------------------------------------------------------------------------- *
- * Globals                                                                    *
- * -------------------------------------------------------------------------- */
-
-extern t_emu*   emu;
-extern t_ui*    ui;
 
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
-extern t_ui*    module_ui_find(const char*);
-extern t_emu*   module_emu_find(const char*);
+extern t_ui*     module_ui_find(const char*);
+extern t_emu*    module_emu_find(const char*);
 
 #endif /* __MODULE_H */

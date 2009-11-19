@@ -72,34 +72,22 @@
 #include "xmalloc.h"
 #include "xtypes.h"
 
+/* common */
+#include "module.h"             /* module types */
+#include "interface.h"          /* emulator/UI interface */
+
 /* architecture */
 #ifdef ARCH_PC                  /* PC */
 #include "arch/pc/pc.h"
 #endif /* ARCH_PC */
 
-#ifdef ARCH_NDS                 /* Nintendo DS (tm) homebrew */
-#include "arch/nds/nds-arm7.h"
-#include "arch/nds/nds-arm9.h"
-#endif /* ARCH_NDS */
-
-/* modules */
-#include "module.h"             /* module interface */
-
 /* module-specific headers */
 /* emulator */
-#ifdef EMU_NULL                 /* NULL emulator (debug) */
-#include "emu/null/null.h"
-#endif /* EMU_NULL */
-
 #ifdef EMU_PCE                  /* NEC PCEngine emulator */
 #include "emu/pce/pce.h"
 #endif /* EMU_PCE */
 
 /* user interface */
-#ifdef UI_NULL                  /* NULL user interface (debug) */
-#include "emu/null/null.h"
-#endif /* UI_NULL */
-
 #ifdef UI_SDL                   /* SDL user interface */
 #include "ui/sdl/sdl.h"
 #endif /* UI_SDL */
@@ -108,17 +96,18 @@
  * Globals                                                                    *
  * -------------------------------------------------------------------------- */
 
-extern uint8*   bc_emu_rom;       /* pointer to ROM image */
+extern uint8*   emu_rom;            /**< pointer to ROM image */
+extern char*    emu_progname;       /**< program name (where applicable) */
 
 /* bc_emu_modules.c */
-extern t_emu    bc_emu_modules_emu[];
-extern t_ui     bc_emu_modules_ui[];
+extern t_emu    emu_modules_emu[];
+extern t_ui     emu_modules_ui[];
 
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
-extern int      bc_emu_main(char*, char*);
-extern void     bc_emu_exit();
+extern int      emu_main(char*, char*);
+extern void     emu_exit();
 
 #endif /* __BC_EMU_H */

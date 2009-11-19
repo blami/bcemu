@@ -6,12 +6,22 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* bc_emu.c: Program entry point. */
+/* emu.c: Program entry point. */
 
 #include "bc_emu.h"
 
 
-uint8* bc_emu_rom = NULL;
+uint8*          emu_rom;            /**< pointer to memory containing ROM */
+char*           emu_progname;       /**< program name (where applicable) */
+
+/* module instances */
+t_emu*          emu_emu;            /**< pointer to emulator module context */
+t_ui*           emu_ui;             /**< pointer to UI module context */
+
+/* modules interface */
+t_video*        emu_video;          /**< video data interface structure */
+t_audio*        emu_audio;          /**< audio data interface structure */
+t_input*        emu_input;          /**< input data interface structure */
 
 /*
  * NOTE:
@@ -30,42 +40,73 @@ uint8* bc_emu_rom = NULL;
  * \param ui_name           UI frontend name
  * \returns                 1 if exited normally, otherwise 0
  */
-int bc_emu_main(char* emu_name, char* ui_name)
+int emu_main(char* emu_name, char* ui_name)
 {
-	debug("entering bc_emu main...");
+	debug("entering emu main...");
 
-	/* initialize emulator */
-	emu = modules_emu_find(emu_name);
-	/* FIXME: asserts here should be handled by arch-dep error handler */
-	assert(emu);
-	assert(emu->init && emu->shutdown);
+	/* get emulator */
+	emu_emu = module_emu_find(emu_name);
+	assert(emu_emu);
+	assert(emu_emu->init && emu_emu->shutdown);
 
-	/* initialize UI */
-	ui = modules_ui_find(ui_name);
-	/* FIXME: asserts here should be handled by arch-dep error handler */
-	assert(ui);
-	assert(ui->init && ui->shutdown);
+	/* get UI */
+	emu_ui = module_ui_find(ui_name);
+	assert(emu_ui);
+	assert(emu_ui->init && emu_ui->shutdown);
 
-	ui->init();
+	/* prepare interface */
+	emu_video = xmalloc(sizeof(t_video));
+	emu_audio = xmalloc(sizeof(t_audio));
+	emu_input = xmalloc(sizeof(t_input));
+	memset(emu_video, 0, sizeof(t_video));
+	memset(emu_audio, 0, sizeof(t_audio));
+	memset(emu_input, 0, sizeof(t_input));
+
+	/* initialize */
+	emu_ui->init();
+	emu_emu->init(emu_video, emu_audio);
 
 	/* application main-loop */
-	debug("entering main-loop...");
-	sleep(10);
+	debug("entering emu main-loop...");
+	while(1)
+	{
+		/* update input (read keys) */
+		emu_ui->update_input(emu_input);
 
-	/* shutdown ui */
-	ui->shutdown();
+		/* handle input related to UI */
+		if(emu_input->quit)
+			break; /* quit */
+
+	}
+	debug("exiting emu main-loop...");
+
+	/* shutdown */
+	emu_emu->shutdown();
+	emu_ui->shutdown();
 
 	return 1;
 }
 
 /**
- * Architecture-independent shutdown called after finishing bc_emu_main().
+ * Architecture-independent shutdown called after finishing emu_main().
  */
-void bc_emu_exit()
+void emu_exit()
 {
-	debug("exiting bc_emu main...");
+	debug("exiting emu main...");
 
-	/* cleanup memory */
-	if(bc_emu_rom != NULL)
-		xfree(bc_emu_rom);
+	/* cleanup ROM memory */
+	if(emu_rom != NULL)
+		xfree(emu_rom);
+
+	/* emu / ui modules are pointers to modules_* array so cleaning
+	 * them is REALLY BAD idea. */
+
+	/* cleanup interface memory */
+	if(emu_video != NULL)
+		xfree(emu_video);
+	if(emu_audio != NULL)
+		xfree(emu_audio);
+	if(emu_input != NULL)
+		xfree(emu_input);
+
 }

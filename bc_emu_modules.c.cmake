@@ -25,37 +25,58 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * List of available emulator modules.
+ * List of available emulator modules. List must be terminated by all-NULL
+ * entry.
+ * \see t_module_emu
+ * \code
+ * {
+ *     "id",        // emulator id
+ *     init,        // emulators init() callback (pointer to function)
+ *     shutdown     // emulators shutdown() callback
+ * };
+ * \endcode
  */
-t_emu bc_emu_modules_emu[] =
+t_emu emu_modules_emu[] =
 {
-#ifdef EMU_NULL
-	/* null emulator */
-	{"null",
-		emu_null_init,
-		emu_null_shutdown
-	},
-#endif /* EMU_NULL */
 #ifdef EMU_PCE
 	/* NEC PC Engine emulator */
-	{"pce",
-		emu_pce_init,
-		emu_pce_shutdown
+	{
+		"pce",
+		pce_init,
+		pce_shutdown
 	},
 #endif /* EMU_PCE */
+
 	{NULL, NULL, NULL}
 };
 
 /**
- * List of available UI modules.
-t_ui bc_emu_modules_ui[] =
+ * List of available UI modules. List must be terminated by all-NULL entry.
+ * \see t_module_ui
+ * \code
+ * {
+ *     "id",        // UI id
+ *     init,        // init() callback (pointer to function)
+ *     shutdown     // shutdown() callback
+ *     update_audio // update_audio() callback (takes param from emu)
+ *     update_video // update_video() callback (takes param from emu)
+ *     update_input // update_input() callback (returns input struct)
+ * };
+ * \endcode
+ */
+t_ui emu_modules_ui[] =
 {
 #ifdef UI_SDL
 	/* SDL UI */
-	{"sdl", 
-		ui_sdl_init,
-		ui_sdl_shutdown
+	{
+		"sdl",
+		sdl_init,
+		sdl_shutdown,
+		sdl_update_audio,
+		sdl_update_video,
+		sdl_update_input
 	},
 #endif /* UI_SDL */
-	{NULL, NULL, NULL}
+
+	{NULL, NULL, NULL, NULL, NULL, NULL}
 };

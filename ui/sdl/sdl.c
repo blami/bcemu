@@ -12,8 +12,7 @@
 #include "sdl.h"
 
 
-static SDL_Surface* ui_sdl_scr;
-static SDL_Surface* ui_sdl_buf;
+static t_sdl* sdl;
 
 /* -------------------------------------------------------------------------- *
  * Init, shutdown routines                                                    *
@@ -22,37 +21,45 @@ static SDL_Surface* ui_sdl_buf;
 /**
  * Initialize SDL user interface.
  */
-void ui_sdl_init()
+int sdl_init()
 {
 	debug("SDL init");
 
-	if(SDL_Init(SDL_INIT_VIDEO) < 0)
-		fatal("couldn't initialize SDL");
+	sdl = xmalloc(sizeof(t_sdl));
+	sdl = memset(sdl, 0, sizeof(t_sdl));
 
-	// TODO configuration file sdl.resolution, sdl.bpp
-	if(!(ui_sdl_scr = SDL_SetVideoMode(640, 480, 16, SDL_DOUBLEBUF)))
+	if(SDL_Init(SDL_INIT_VIDEO) < 0)
+		return 0;
+	/* TODO configuration file section `ui.[sdl.]resoultion, ui.[sdl.]bpp */
+	if(!(sdl->screen = SDL_SetVideoMode(640, 480, 16, SDL_DOUBLEBUF)))
 	{
 		SDL_Quit();
-		fatal("couldn't initialize SDL video surface");
+		return 0;
 	}
 
-	// TODO configuration file sdl.keyrepeat (.delay, .interval)
+	/* TODO configuration file section `ui.[sdl.]keyrepeat */
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-
 	SDL_WM_SetCaption("bc_emu", NULL);
+
+	return 1;
 }
 
 /**
  * Shutdown SDL user interface.
  */
-void ui_sdl_shutdown()
+void sdl_shutdown()
 {
 	debug("SDL shutdown");
+	assert(sdl != NULL);
 
-	if(ui_sdl_scr)
-		SDL_FreeSurface(ui_sdl_scr);
-	if(ui_sdl_buf)
-		SDL_FreeSurface(ui_sdl_buf);
+	/* cleanup surfaces */
+	if(sdl->screen)
+		SDL_FreeSurface(sdl->screen);
+	if(sdl->buffer)
+		SDL_FreeSurface(sdl->buffer);
+
+	/* cleanup sdl */
+	xfree(sdl);
 
 	SDL_Quit();
 }
@@ -62,43 +69,55 @@ void ui_sdl_shutdown()
  * -------------------------------------------------------------------------- */
 
 /**
- * Update input devices.
+ * Update audio output. Takes pre-filled emulator sound buffers as parameter
+ * and converts them to SDL playable audio which is immediately processed.
  */
-void sdl_update_input()
+void sdl_update_audio()
 {
-	// TODO support joysticks and gamepads
-	// TODO configuration of input devices (currently only one device
-	// supported)
+}
 
-	SDL_Event e;
+/**
+ * Update video output. Takes pre-filled emulator screen bitmap as parameter
+ * and converts it to SDL surface of specified properties. Does centering and
+ * scaling if emulator changes viewport/resolution and also immediate bliting.
+ */
+void sdl_update_video()
+{
+}
 
-	while(SDL_PollEvent(&e))
+/**
+ * Update input. Dump input devices state into structure pointed by input
+ * pointer.
+ * TODO read configuration section ui.[sdl.]keymapping.*
+ * \param input         pointer to structure holding input data to be updated
+ */
+void sdl_update_input(t_input* input)
+{
+	assert(sdl);
+	assert(input);
+
+	/* cleanup previous state */
+	memset(input, 0, sizeof(t_input));
+
+	while(SDL_PollEvent(&sdl->event))
 	{
-		switch(e.type)
+		switch(sdl->event.type)
 		{
-		SDL_QUIT:
-			debug("SDL exit triggered")
-			// FIXME exit cleanly
-			exit(EXIT_SUCCESS);
+		case SDL_QUIT:
+			debug("SDL exit triggered");
+			input->quit = 1;
 			break;
 
-		SDL_KEYDOWN:
-			debug("SDL keydown: %x", e.key.keysym.scancode);
-			switch(e.key.keysym.sym)
+		case SDL_KEYDOWN:
+			debug("SDL keydown: %x", sdl->event.key.keysym.scancode);
+			switch(sdl->event.key.keysym.sym)
 			{
 			case SDLK_ESCAPE:
 				debug("SDL exit triggered");
-				// FIXME exit cleanly
-				exit(EXIT_SUCCESS);
+				input->quit = 1;
 				break;
-			default:
-				debug("SDL unbound key: %x", e.key.keysym.scancode);
 			}
 			break;
 		}
 	}
 }
-
-/* -------------------------------------------------------------------------- *
- * Private functions, helpers                                                 *
- * -------------------------------------------------------------------------- */

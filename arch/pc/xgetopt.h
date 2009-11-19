@@ -49,10 +49,10 @@
 extern "C" {
 #endif
 
-extern char* optarg;
-extern int optind;
-extern int opterr;
-extern int optopt;
+extern char* xoptarg;
+extern int xoptind;
+extern int xopterr;
+extern int xoptopt;
 
 int xgetopt(int argc, char** argv, char* optstr);
 

@@ -13,20 +13,17 @@
 #include "xgetopt.h"
 
 
-static char*    prog_name;      /* program executable name */
+static char* pc_emu_name;   /**< -e: emulator name \see EMU */
+static char* pc_ui_name;    /**< -u: UI name \see UI */
+static char* pc_rom_file;   /**< ROM filename */
 
-static char*    emu_name;       /* -e: emulator name \see EMU */
-static char*    ui_name;        /* -u: UI name \see UI */
-
-static char*    in_file;        /* ROM filename */
-
-static int      main_call = 0;  /* whether bc_emu_main() was called */
+static int pc_is_init = 0;  /**< whether emu_main() was called */
 
 /**
  * Print short help message and exit.
  * \param exit_code     exit code
  */
-static void print_usage(int exit_code)
+static void pc_print_usage(int exit_code)
 {
 	printf("Usage: bc_emu [options] file\n"
 		"\n"
@@ -48,7 +45,7 @@ static void print_usage(int exit_code)
  * Print version info and exit.
  * \param exit_code     exit code
  */
-static void print_version(int exit_code)
+static void pc_print_version(int exit_code)
 {
 	printf("Version: %s (%s) %s\n"
 		"Build OS: %s\n"
@@ -77,20 +74,21 @@ static void print_version(int exit_code)
 /**
  * Cleanup before exit.
  */
-static void exit_handler()
+static void pc_atexit()
 {
-	if(main_call)
-		bc_emu_exit();
+	/* check whether emu_main was called */
+	if(pc_is_init)
+		emu_exit();
 
 	/* TODO here should be only pc.c cleanup code. */
 
-	if(ui_name != NULL)
-		xfree(ui_name);
-	if(emu_name != NULL)
-		xfree(emu_name);
+	if(pc_ui_name != NULL)
+		xfree(pc_ui_name);
+	if(pc_emu_name != NULL)
+		xfree(pc_emu_name);
 
-	if(in_file != NULL)
-		xfree(in_file);
+	if(pc_rom_file != NULL)
+		xfree(pc_rom_file);
 
 	printf("\nExiting...\n");
 }
@@ -101,7 +99,7 @@ static void exit_handler()
  * \return              pointer to block of memory containing ROM image if
  *                      success, otherwise NULL.
  */
-static uint8* load_rom(char* filename)
+static uint8* pc_load_rom(char* filename)
 {
 	uint8* buf = NULL;
 	FILE* f = NULL;
@@ -126,7 +124,7 @@ static uint8* load_rom(char* filename)
 	/* seek back to file begin and read it to buffer */
 	if(fseek(f, 0, SEEK_SET) != 0)
 	{
-		debug("couldn't seek to file begin");
+		debug("couldn't seek back to file begin");
 		fclose(f);
 		return NULL;
 	}
@@ -164,67 +162,71 @@ int main(int argc, char** argv)
 		"\n");
 
 	/* register exit handler */
-	atexit(exit_handler);
+	atexit(pc_atexit);
 
-	prog_name = argv[0];
+	/* prepare pc static fields */
+	pc_emu_name = NULL;
+	pc_ui_name = NULL;
+	pc_rom_file = NULL;
 
-	emu_name = NULL;
-	ui_name = NULL;
-
-	in_file = NULL;
+	/* prepare bc_emu global fields */
+	emu_rom = NULL;
+	emu_progname = argv[0];
 
 	/* resolve command line arguments */
 	while(1)
 	{
-		int p = getopt(argc, argv, "-hVe:u:");
+		int p = xgetopt(argc, argv, "-hVe:u:");
 		if(p == -1)
 			break;
 
 		switch(p)
 		{
 			case 'h':
-				print_usage(EXIT_SUCCESS);
+				pc_print_usage(EXIT_SUCCESS);
 				break;
 			case 'V':
-				print_version(EXIT_SUCCESS);
+				pc_print_version(EXIT_SUCCESS);
 				break;
 			case 'e':
-				emu_name = xstrndup(optarg, strlen(optarg));
-				debug("-e: forced to use emulator `%s'", optarg);
+				pc_emu_name = xstrndup(xoptarg, strlen(xoptarg));
+				debug("-e: forced to use emulator `%s'", xoptarg);
 				break;
 			case 'u':
-				ui_name = xstrndup(optarg, strlen(optarg));
-				debug("-u: forced to use UI `%s'", optarg);
+				pc_ui_name = xstrndup(xoptarg, strlen(xoptarg));
+				debug("-u: forced to use UI `%s'", xoptarg);
 				break;
 
 			case 1:
-				in_file = xstrndup(optarg, strlen(optarg));
+				pc_rom_file = xstrndup(xoptarg, strlen(xoptarg));
 				break;
 		}
 	}
 
-	/* check and preload in_file to global variable */
-	if(!in_file)
+	/* check and preload rom_file to global variable */
+	if(!pc_rom_file)
 	{
-		fprintf(stderr, "%s: missing ROM image filename\n", prog_name);
+		fprintf(stderr, "%s: missing ROM image filename\n", emu_progname);
 		exit(EXIT_FAILURE);
 	}
 
 	/* put ROM image file to memory (doesn't bother 2nd and 3rd gen images are
 	 * around 15M max. */
-	bc_emu_rom = load_rom(in_file);
-	if(!bc_emu_rom)
+	emu_rom = pc_load_rom(pc_rom_file);
+	if(!emu_rom)
 	{
 		fprintf(stderr, "%s: couldn't load ROM image from file: %s\n",
-			prog_name,
-			in_file);
+			emu_progname,
+			pc_rom_file);
 		exit(EXIT_FAILURE);
 	}
 
+	/* TODO emu/ui autoselect */
+
 	/* invoke architecture independent/safe bc_emu code */
 	/* bc_emu.c */
-	main_call = 1;
-	bc_emu_main(emu_name, ui_name);
+	pc_is_init = 1;
+	emu_main(pc_emu_name, pc_ui_name);
 	/* called from exit_handler():
 	 * bc_emu_exit(); */
 

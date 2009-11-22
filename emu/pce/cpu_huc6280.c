@@ -6,20 +6,22 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* cpu_huc6280.c: HuC6280 CPU emulator */
+/* cpu_huc6280.c: NEC PCEngine HuC6280 CPU emulator */
 
 #include "bc_emu.h"
+#include "emu/pce/cpu_huc6280.h"
+#include "emu/pce/vce_huc6260.h"
+#include "emu/pce/vdc_huc6270.h"
+#include "emu/pce/psg.h"
+#include "emu/pce/rom.h"
 
 
 t_pce_cpu* pce_cpu = NULL;
 
-/* opcode implementation */
-#include "cpu_op_util.h"
-#include "cpu_op.h"
-
-/* opcode table */
+/* include instruction set + opcode table */
+#include "cpu_instr_util.inc"
+#include "cpu_instr.inc"
 #include "cpu_op_tab.inc"
-
 
 /* -------------------------------------------------------------------------- *
  * Init, shutdown, reset routines                                             *
@@ -214,7 +216,7 @@ unsigned int pce_cpu_reg_r(int name)
  */
 void pce_cpu_reg_w(int name, unsigned int value)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	switch(name)
 	{
@@ -283,7 +285,7 @@ void pce_cpu_reg_w(int name, unsigned int value)
  */
 void pce_cpu_set_nmi_line(int state)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	if(pce_cpu->nmi_state == state)
 		return;
@@ -303,7 +305,7 @@ void pce_cpu_set_nmi_line(int state)
  */
 void pce_cpu_set_irq_line(int irqline, int state)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	pce_cpu->irq_state[irqline] = state;
 
@@ -320,6 +322,8 @@ void pce_cpu_set_irq_line(int irqline, int state)
  */
 static void pce_cpu_set_irq_callback(int (*callback)(int irqline))
 {
+	assert(pce_cpu);
+
 	pce_cpu->irq_callback = callback;
 }
 
@@ -342,7 +346,7 @@ static int pce_cpu_irq_r(int offset)
 {
 	int status;
 
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	switch(offset)
 	{
@@ -366,7 +370,7 @@ static int pce_cpu_irq_r(int offset)
  */
 static void pce_cpu_irq_w(int offset, int data)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	switch(offset)
 	{
@@ -387,7 +391,7 @@ static void pce_cpu_irq_w(int offset, int data)
  */
 static int pce_cpu_timer_r(int offset)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	switch(offset) 
 	{
@@ -407,7 +411,7 @@ static int pce_cpu_timer_r(int offset)
  */
 static void pce_cpu_timer_w(int offset, int data)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
 	switch(offset)
 	{
@@ -469,40 +473,40 @@ static uint8 pce_cpu_input_r()
 /**
  * Internal read I/O page (CPU peripherals) address decision logic.
  * FIXME
- * \param address   page address
+ * \param addr      page address
  * \return          page address content
  */
-static int pce_cpu_iopage_r(int address)
+static int pce_cpu_iopage_r(int addr)
 {
 	assert(pce && pce_cpu);
 
-	switch(address & 0x1C00)
+	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* VDC */
-			if(address <= 0x0003)
-				return 0x00;//FIXME vdc_r(address);
+		case 0x0000: /* 0x0000-0x0003 vdc */
+			if(addr <= 0x0003)
+				return 0x00;//FIXME vdc_r(addr);
 			break;
-		case 0x0400: /* VCE */
-			if(address <= 0x0405)
-				return 0x00;//FIXME vce_r(address);
+		case 0x0400: /* 0x0400-0x0405 vce */
+			if(addr <= 0x0405)
+				return 0x00;//FIXME vce_r(addr);
 			break;
-		case 0x0800: /* PSG */
+		case 0x0800: /* 0x0800-0x0809 psg */
 			break;
-		case 0x0C00: /* Timer */
-			if(address == 0x0C00 || address == 0x0C01)
-				return pce_cpu_timer_r(address & 1);
+		case 0x0C00: /* 0x0C00-0x0C01 timer */
+			if(addr == 0x0C00 || addr == 0x0C01)
+				return pce_cpu_timer_r(addr & 1);
 			break;
-		case 0x1000: /* I/O */
-			if(address == 0x1000)
+		case 0x1000: /* 0x1000 input port */
+			if(addr == 0x1000)
 				return pce_cpu_input_r();
 			break;
-		case 0x1400: /* IRQ control */
-			if(address == 0x1402 || address == 0x1403)
-				return pce_cpu_irq_r(address & 1);
+		case 0x1400: /* 0x1402-0x1403 irq */
+			if(addr == 0x1402 || addr == 0x1403)
+				return pce_cpu_irq_r(addr & 1);
 			break;
 	}
 
-	debug("CPU UNKNOWN iopage/read %04X (PC:%08X)", address,
+	debug("CPU UNKNOWN iopage/read %04X (PC:%08X)", addr,
 		pce_cpu_reg_r(CPU_PC));
 	return (0x00);
 }
@@ -510,123 +514,123 @@ static int pce_cpu_iopage_r(int address)
 /**
  * Internal write I/O page (CPU peripherals) address decision logic.
  * FIXME
- * \param address       page address
+ * \param addr          page address
  * \param data          data to be written
  * \see pce_cpu_mem_w
  */
-static void pce_cpu_iopage_w(int address, int data)
+static void pce_cpu_iopage_w(int addr, int data)
 {
-	assert(pce && pce_cpu);
+	assert(pce_cpu);
 
-	switch(address & 0x1C00)
+	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* VDC */
-			if(address <= 0x0003)
+		case 0x0000: /* 0x0000-0x0003 vdc */
+			if(addr <= 0x0003)
 			{
-				//FIXME vdc_w(address, data);
+				//FIXME vdc_w(addr, data);
 				return;
 			}
 			break;
-		case 0x0400: /* VCE */
-			if(address <= 0x0405)
+		case 0x0400: /* 0x0400-0x0405 vce */
+			if(addr <= 0x0405)
 			{
-				//FIXME vce_w(address, data);
+				//FIXME vce_w(addr, data);
 				return;
 			}
 			break;
-		case 0x0800: /* PSG */
-			if(address <= 0x0809)
+		case 0x0800: /* 0x0800-0x0805 psg */
+			if(addr <= 0x0809)
 			{
-				//FIXME psg_w(address, data);
+				pce_psg_w(addr, data);
 				return;
 			};
 			break;
-		case 0x0C00: /* Timer */
-			if(address == 0x0C00 || address == 0x0C01)
+		case 0x0C00: /* 0x0C00-0x0C01 timer */
+			if(addr == 0x0C00 || addr == 0x0C01)
 			{
-				pce_cpu_timer_w(address & 1, data);
+				pce_cpu_timer_w(addr & 1, data);
 				return;
 			};
 			break;
-		case 0x1000: /* I/O */
-			if(address == 0x1000)
+		case 0x1000: /* 0x1000 input port */
+			if(addr == 0x1000)
 			{
 				pce_cpu_input_w(data);
 				return;
 			}
 			break;
-		case 0x1400: /* IRQ control */
-			if(address == 0x1402 || address == 0x1403)
+		case 0x1400: /* 0x1402-0x1403 irq */
+			if(addr == 0x1402 || addr == 0x1403)
 			{
-				pce_cpu_irq_w(address & 1, data);
+				pce_cpu_irq_w(addr & 1, data);
 				return;
 			};
 			break;
 	}
 
-	debug("CPU UNKNOWN iopage/write %02X: %04X (PC:%08X)", data, address,
+	debug("CPU UNKNOWN iopage/write %02X: %04X (PC:%08X)", data, addr,
 		pce_cpu_reg_r(CPU_PC));
 }
 
 /**
  * Read memory.
- * \param address       memory address to be be read
+ * \param addr          memory address to be be read
  * \return              memory content
  */
-int pce_cpu_mem_r(int address)
+int pce_cpu_mem_r(int addr)
 {
 	uint8 page;
 
 	assert(pce && pce_cpu);
 
 	/* lower ROM */
-	if(address <= 0x0FFFFF)
-		return pce->rom[(address)];
+	if(addr <= 0x0FFFFF)
+		return pce->rom[(addr)];
 
-	page = (address >> 13) & 0xFF;
+	page = (addr >> 13) & 0xFF;
 
 	/* ROM */
 	if(page <= 0x7F)
-		return pce->rom[(address)];
+		return pce->rom[(addr)];
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
-		return pce->ram[(address & 0x7FFF)];
+		return pce->ram[(addr & 0x7FFF)];
 
 	/* I/O */
 	if(page == 0xFF)
-		return pce_cpu_iopage_r(address & 0x1FFF);
+		return pce_cpu_iopage_r(addr & 0x1FFF);
 
-	debug("CPU UNKNOWN read %02X:%04X (PC:%08X)", page, address & 0x1FFFF,
+	debug("CPU UNKNOWN read %02X:%04X (PC:%08X)", page, addr & 0x1FFFF,
 		pce_cpu_reg_r(CPU_PC));
 	return (0xFF);
 }
 
 /**
  * Write memory.
- * \param address       memory address to write to
+ * \param addr          memory address to write to
  * \param data          data to be written
  */
-void pce_cpu_mem_w(int address, int data)
+void pce_cpu_mem_w(int addr, int data)
 {
-	uint8 page = (address >> 13) & 0xFF;
+	uint8 page = (addr >> 13) & 0xFF;
 
 	assert(pce && pce_cpu);
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
 	{
-		pce->ram[(address & 0x7FFF)] = data;
+		pce->ram[(addr & 0x7FFF)] = data;
 		return;
 	}
 
 	/* I/O */
 	if(page == 0xFF)
 	{
-		pce_cpu_iopage_w(address & 0x1FFF, data);
+		pce_cpu_iopage_w(addr & 0x1FFF, data);
 		return;
 	}
 
 	debug("CPU UNKNOWN write %02X: %02X:%04X (PC:%08X)", data, page,
-		address & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
+		addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 }

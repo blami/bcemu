@@ -21,8 +21,10 @@
  */
 typedef struct
 {
-	uint8 ram[0x8000];          /* device RAM */
-	uint8 rom[0x100000];        /* device ROM */
+	uint8 ram[0x8000];          /* PCE RAM (32k) */
+	uint8 vram[0x10000];        /* PCE video RAM (64k) */
+
+	uint8 rom[0x100000];        /* PCE HuCard ROM (1M) */
 
 } t_pce;
 
@@ -37,6 +39,7 @@ extern t_pce*   pce;
  * -------------------------------------------------------------------------- */
 
 extern int      pce_init();
+extern void     pce_reset();
 extern void     pce_shutdown();
 
 #endif /* __SDL_H */

@@ -9,9 +9,14 @@
 /* pce.c: NEC PCEngine emulator. */
 
 #include "bc_emu.h"
+#include "emu/pce/cpu_huc6280.h"
+#include "emu/pce/psg.h"
+#include "emu/pce/vce_huc6260.h"
+#include "emu/pce/vdc_huc6270.h"
+#include "emu/pce/rom.h"
 
 
-t_pce* pce;
+t_pce* pce = NULL;
 
 /* -------------------------------------------------------------------------- *
  * Init, shutdown, reset routines                                             *
@@ -20,11 +25,9 @@ t_pce* pce;
 /**
  * Initialize PCE emulator.
  */
-int pce_init(t_video* video, t_audio* audio)
+int pce_init()
 {
 	debug("PCE init");
-	assert(video);
-	assert(audio);
 
 	pce = xmalloc(sizeof(t_pce));
 	memset(pce, 0, sizeof(t_pce));
@@ -32,6 +35,7 @@ int pce_init(t_video* video, t_audio* audio)
 	/* initialize emulator subsystems */
 	pce_rom_parse();
 	pce_cpu_init();
+	pce_psg_init();
 
 	return 1;
 }
@@ -45,6 +49,7 @@ void pce_shutdown()
 	assert(pce);
 
 	/* shutdown emulator subsystems */
+	pce_psg_shutdown();
 	pce_cpu_shutdown();
 
 	/* clean pce */
@@ -55,6 +60,17 @@ void pce_shutdown()
  * Reset PCE emulator.
  */
 void pce_reset()
+{
+	assert(pce);
+
+	pce_psg_reset();
+}
+
+/* -------------------------------------------------------------------------- *
+ * PCE                                                                        *
+ * -------------------------------------------------------------------------- */
+
+void pce_frame()
 {
 
 }

@@ -11,7 +11,7 @@
 #include "bc_emu.h"
 
 
-uint8*          emu_rom;            /**< pointer to memory containing ROM */
+t_rom*          emu_rom;            /**< pointer to memory containing ROM */
 char*           emu_progname;       /**< program name (where applicable) */
 
 /* module instances */
@@ -96,7 +96,12 @@ void emu_exit()
 
 	/* cleanup ROM memory */
 	if(emu_rom != NULL)
+	{
+		if(emu_rom->data != NULL)
+			xfree(emu_rom->data);
+
 		xfree(emu_rom);
+	}
 
 	/* emu / ui modules are pointers to modules_* array so cleaning
 	 * them is REALLY BAD idea. */

@@ -93,11 +93,26 @@
 #endif /* UI_SDL */
 
 /* -------------------------------------------------------------------------- *
+ * Data types                                                                 *
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Architecture independent type representing ROM image.
+ */
+typedef struct
+{
+	int size;               /**< ROM image size in bytes */
+	uint8* data;            /**< ROM image data */
+
+} t_rom;
+
+
+/* -------------------------------------------------------------------------- *
  * Globals                                                                    *
  * -------------------------------------------------------------------------- */
 
-extern uint8*   emu_rom;            /**< pointer to ROM image */
-extern char*    emu_progname;       /**< program name (where applicable) */
+extern t_rom*   emu_rom;
+extern char*    emu_progname;
 
 /* bc_emu_modules.c */
 extern t_emu    emu_modules_emu[];

@@ -95,12 +95,10 @@ static void pc_atexit()
 
 /**
  * Load content of ROM file into memory.
- * \param filename      ROM image filename
- * \return              pointer to block of memory containing ROM image if
- *                      success, otherwise NULL.
  */
-static uint8* pc_load_rom(char* filename)
+static t_rom* pc_load_rom(const char* filename)
 {
+	t_rom* r;
 	uint8* buf = NULL;
 	FILE* f = NULL;
 	int size;
@@ -144,7 +142,11 @@ static uint8* pc_load_rom(char* filename)
 	debug("ROM image file `%s' read successfully", filename);
 	fclose(f);
 
-	return buf;
+	r = xmalloc(sizeof(t_rom));
+	r->size = size;
+	r->data = buf;
+
+	return r;
 }
 
 /**

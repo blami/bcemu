@@ -23,7 +23,7 @@ typedef struct
 {
 	char* id;                   /* emulator identifier (e.g. pce) */
 
-	int (*init)(void*, void*);
+	int (*init)();
 	void (*shutdown)(); 
 
 } t_emu;

@@ -17,44 +17,55 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Programmable sound generator.
+ * NEC PCEngine PSG (programmable sound generator).
  */
 typedef struct
 {
 	uint8 sel_ch;               /**< selected channel */
 
-	uint8 balance;              /**< sound balance (all channels) */
-	uint8 noise_freq;           /**< white noise frequency */
-	uint8 noise_ctrl;           /**< white noise control */
+	uint8 balance;              /**< balance (all channels 4+4b R,L) */
+	uint8 noise;                /**< white noise control and frequency */
 	uint8 lfo_freq;             /**< LFO (low-frequency oscillator) frequency */
 	uint8 lfo_ctrl;             /**< LFO (low-frequency oscillator) control */
 
 	struct {
-		int counter;            /* Waveform index counter */
-		uint16 frequency;       /* Channel frequency */
-		uint8 control;          /* Channel enable, DDA, volume */
-		uint8 balance;          /* Channel balance */
-		uint8 waveform[32];     /* Waveform data */
-		uint8 waveform_index;   /* Waveform data index */
-	} channel[8];
+		int counter;            /**< waveform index counter */
+
+		uint8 wav_index;        /**< wav data index */
+		uint8 wav[32];          /**< wav data */
+		uint16 freq;            /**< frequency */
+		uint8 ctrl;             /**< control (enable, DDA, volume) */
+		uint8 balance;          /**< balance 4+4b L+R */
+
+	} ch[8];                    /**< channel struct */
 
 } t_pce_psg;
 
+/* -------------------------------------------------------------------------- *
+ * Constants                                                                  *
+ * -------------------------------------------------------------------------- */
 
+/**
+ * Current channel shortcut.
+ */
+#define PSG_CH       pce_psg->ch[pce_psg->sel_ch]
 
-/* Macro to access currently selected PSG channel */
-#define PSGCH   psg.channel[psg.select]
+/* -------------------------------------------------------------------------- *
+ * Globals                                                                    *
+ * -------------------------------------------------------------------------- */
 
+extern t_pce_psg*   pce_psg;
 
-/* Global variables */
-extern t_psg psg;
+/* -------------------------------------------------------------------------- *
+ * Function prototypes                                                        *
+ * -------------------------------------------------------------------------- */
 
-/* Function prototypes */
-int psg_init(void);
-void psg_reset(void);
-void psg_shutdown(void);
-void psg_w(uint16 address, uint8 data);
-void psg_update(int16 *bufl, int16 *bufr, int length);
+extern int      pce_psg_init();
+extern void     pce_psg_reset();
+extern void     pce_psg_shutdown();
+
+extern void     pce_psg_w(uint16, uint8);
+extern void     pce_psg_output(int16*, int16*, int);
 
 #endif /* __PCE_PSG_H */
 

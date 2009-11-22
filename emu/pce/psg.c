@@ -1,159 +1,212 @@
-/***********************************************************************
- * emu: video game emulator                                            *
- * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>               *
- *                                                                     *
- * This is free software licensed under MIT license. See LICENSE.      *
- ***********************************************************************/
+/******************************************************************************
+ * bc_emu: portable video game emulator                                       *
+ * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>                      *
+ * http://www.blami.net/prj/bc_emu                                            *
+ *                                                                            *
+ * This is free software licensed under MIT license. See LICENSE.             *
+ ******************************************************************************/
 
-/* psg.c: PCE PSG (Programmable Sound Generator) device emulator */
+/* psg.c: NEC PCEngine HuC6280 PSG (programmable sound generator) emulator */
+
+#include "bc_emu.h"
+#include "emu/pce/cpu_huc6280.h"
+#include "emu/pce/vce_huc6260.h"
+#include "emu/pce/vdc_huc6270.h"
+#include "emu/pce/psg.h"
+#include "emu/pce/rom.h"
 
 
-#include "bc_pce.h"
+t_pce_psg* pce_psg = NULL;
 
-t_psg psg;
+/* -------------------------------------------------------------------------- *
+ * Init, reset, shutdown routines                                             *
+ * -------------------------------------------------------------------------- */
 
-/*--------------------------------------------------------------------------*/
-/* Init, reset, shutdown routines                                           */
-/*--------------------------------------------------------------------------*/
-
-int psg_init(void)
+/**
+ * Initialize PSG.
+ * \return              returns 1 if success, otherwise 0
+ */
+int pce_psg_init()
 {
-    memset(&psg, 0, sizeof(psg));
-    return (0);
+	debug("PSG init");
+
+	pce_psg = xmalloc(sizeof(t_pce_psg));
+	pce_psg_reset();
+
+	return 1;
 }
 
-void psg_reset(void)
+/**
+ * Reset PSG.
+ */
+void pce_psg_reset()
 {
-    memset(&psg, 0, sizeof(psg));
+	assert(pce_psg);
+	debug("PSG reset");
+
+	memset(pce_psg, 0, sizeof(t_pce_psg));
 }
 
-void psg_shutdown(void)
+/**
+ * Shutdown PSG.
+ */
+void pce_psg_shutdown()
 {
+	debug("PSG shutdown");
+	assert(pce_psg);
+
+	/* cleanup pce_psg */
+	xfree(pce_psg);
 }
 
-/*--------------------------------------------------------------------------*/
-/* PSG emulation                                                            */
-/*--------------------------------------------------------------------------*/
+/* -------------------------------------------------------------------------- *
+ * PSG                                                                        *
+ * -------------------------------------------------------------------------- */
 
-void psg_w(uint16 address, uint8 data)
+/**
+ * Write PSG memory. PSG starts at address 0x0800 and ends at 0x0809.
+ * \param addr          address
+ * \param data          unsigned data to be written to PSG memory
+ */
+void pce_psg_w(uint16 addr, uint8 data)
 {
-    switch(address)
-    {
-        case 0x0800: /* Channel select */
-            psg.select = (data & 7);
-            break;
+	assert(pce_psg);
 
-        case 0x0801: /* Global sound balance */
-            psg.globalbalance = data;
-            break;
+	switch(addr)
+	{
+		/* channel select */
+		case 0x0800:
+			pce_psg->sel_ch = (data & 7);
+			break;
 
-        case 0x0802: /* Channel frequency (LSB) */
-            PSGCH.frequency = (PSGCH.frequency & 0x0F00) | (data);
-            break;
+		/* sound balance (all channels) */
+		case 0x0801:
+			pce_psg->balance = data;
+			break;
 
-        case 0x0803: /* Channel frequency (MSB) */
-            PSGCH.frequency = (PSGCH.frequency & 0x00FF) | ((data & 0x0F) << 8);
-            break;
+		/* white noise */
+		case 0x0807:
+			pce_psg->noise = data;
+			break;
 
-        case 0x0804: /* Channel enable, DDA, volume */
-            PSGCH.control = data;
-            if((data & 0xC0) == 0x40) PSGCH.waveform_index = 0;
-            break;
+		/* LFO (low frequency oscilator) frequency */
+		case 0x0808:
+			pce_psg->lfo_freq = data;
+			break;
 
-        case 0x0805: /* Channel balance */
-            PSGCH.balance = data;
-            break;
+		/* LFO (low frequency oscilator) control */
+		case 0x0809:
+			pce_psg->lfo_ctrl = data;
+			break;
 
-        case 0x0806: /* Channel waveform data */
-            PSGCH.waveform[PSGCH.waveform_index] = data;
-            PSGCH.waveform_index = ((PSGCH.waveform_index + 1) & 0x1F);
-            break;
+		/*
+		 * Current channel specific:
+		 */
 
-        case 0x0807: /* Noise enable and frequency */
-            psg.noisectrl = data;
-            break;
+		/* channel frequency (LSB, MSB) */
+		case 0x0802:
+			PSG_CH.freq = (PSG_CH.freq & 0x0F00) | (data);
+			break;
+		case 0x0803:
+			PSG_CH.freq = (PSG_CH.freq & 0x00FF) | ((data & 0x0F) << 8);
+			break;
 
-        case 0x0808: /* LFO frequency */
-            psg.lfofreq = data;
-            break;
+		/* channel ctrl (enable, DDA, volume) */
+		case 0x0804:
+			PSG_CH.ctrl = data;
+			/* if needed set wave index to 0 */
+			if((data & 0xC0) == 0x40)
+				PSG_CH.wav_index = 0;
+			break;
 
-        case 0x0809: /* LFO trigger and control */
-            psg.lfoctrl = data;
-            break;
-    }
+		/* channel balance */
+		case 0x0805:
+			PSG_CH.balance = data;
+			break;
+
+		/* channel waveform data */
+		case 0x0806:
+			PSG_CH.wav[PSG_CH.wav_index] = data;
+			/* increase waveform data index */
+			PSG_CH.wav_index = ((PSG_CH.wav_index + 1) & 0x1F);
+			break;
+
+		default:
+			debug("PSG UNKNOWN write at %x", addr);
+	}
 }
 
-void psg_update(int16 *bufl, int16 *bufr, int length)
+/**
+ * Emulate PSG. Fill output buffers with data of specified length in samples.
+ * \param buf_l         left channel output buffer
+ * \param buf_r         right channel output buffer
+ * \param length        length of requested data in samples
+ */
+void pce_psg_output(int16 *buf_l, int16 *buf_r, int length)
 {
-    /* Fill as many samples as needed */
-    while(length > 0)
-    {
-        int ch;                    /* Channel index */
-        int sample[2] = {0, 0};    /* Left and right samples */
-        int start;                 /* Skip channels 0, 1 if LFO is enabled */ 
-        int stop;                  /* Skip channels 4, 5 if noise is enabled */
+	assert(pce_psg);
 
-        start = ((psg.lfoctrl & 3) == 0) ? 0 : 2;
-        stop = (psg.noisectrl & 0x80) ? 4 : 6;
+	while(length > 0)
+	{
+		int ch;
+		int sample[2] = {0, 0};    /* samples */
 
-        for(ch = start; ch < stop; ch += 1)
-        {
-            /* If channel is ON and DDA is OFF, play waveform data */
-            if((psg.channel[ch].control & 0xC0) == 0x80)
-            {
-                /* Global sound balance (left and right, all channels) */
-                int lbal = (psg.globalbalance >> 4) & 0x0F;
-                int rbal = (psg.globalbalance >> 0) & 0x0F;
+		int first_ch; 
+		int last_ch;
 
-                /* Balance (left and right, this channel) */
-                int lchb = (psg.channel[ch].balance >> 4) & 0x0F;
-                int rchb = (psg.channel[ch].balance >> 0) & 0x0F;
+		/* skip channels 0,1 if LFO (low frequency oscillator) is enabled */
+		first_ch = ((pce_psg->lfo_ctrl & 3) == 0)
+			? 0 : 2;
+		/* skip channels 4,5 if white noise is enabled */
+		last_ch = (pce_psg->noise & 0x80)
+			? 4 : 6;
 
-                /* Volume level (this channel) */
-                int chvl = (psg.channel[ch].control & 0x1F);
-    
-                /* Total volume levels for left and right
-                   (volume sounds too soft - not sure how to combine these) */
-                int lvol = (lbal + lchb + chvl);
-                int rvol = (rbal + rchb + chvl);
+		for(ch = first_ch; ch < last_ch; ch ++)
+		{
+			if((pce_psg->ch[ch].ctrl & 0xC0) != 0x80)
+				continue; /* channel is not enabled */
 
-                int base, step, offset, data;
+			/* compute channel balance as sum of global balance and channel
+			 * balance */
+			int l_bal = (pce_psg->balance >> 4) & 0x0F
+				+ (pce_psg->ch[ch].balance >> 4) & 0x0F;
+			int r_bal = (pce_psg->balance >> 0) & 0x0F
+				+ (pce_psg->ch[ch].balance >> 0) & 0x0F;
 
-                /* This is the largest possible step value which is divided
-                   by the channel frequency used to increment the counter,
-                   which in turn is used to traverse the waveform buffer.
-                   3580000 (PSG clock) / 32 (length of waveform) = 111875 (base step value)
-                   That doesn't work right but multiplying it by three sounds better. */
-                base = (3580000 / 32) * 3;
+			/* compute channel volume level as sum of channel volume and
+			 * balance */
+			int l_vol = l_bal + (pce_psg->ch[ch].ctrl & 0x1F);
+			int r_vol = r_bal + (pce_psg->ch[ch].ctrl & 0x1F);
 
-                /* Calculate the value to add to the counter for each sample,
-                   but don't divide by zero if the frequency is zero */
-                step = (psg.channel[ch].frequency) ? base / psg.channel[ch].frequency : 0;
+			/* generate samples */
 
-                /* Use upper 5 bits of 12-bit frequency as wave index */
-                offset = (psg.channel[ch].counter >> 12) & 0x1F;
+			/* largest step (PSG clock / lenght of waveform) */
+			int step_base = (3580000 / 32);
+			/* current step (avoid division by zero) */
+			int step = (pce_psg->ch[ch].freq != 0)
+				? step_base / pce_psg->ch[ch].freq : 0;
 
-                /* Bump waveform index */
-                psg.channel[ch].counter += step;
+			/* calculate offset (upper 5 bits of counter == data length) */
+			int offset = (pce_psg->ch[ch].counter >> 12) & 0x1F;
 
-                /* Data is 5 bits */
-                data = (psg.channel[ch].waveform[offset] & 0x1F);
+			pce_psg->ch[ch].counter += step;
 
-                /* Add new sample to old one */
-                sample[0] = (sample[0] + (lvol * data));
-                sample[1] = (sample[1] + (rvol * data));
-            }
-        }
+			/* get data and add to samples */
+			int data = (pce_psg->ch[ch].wav[offset] & 0x1F);
 
-        /* Make samples signed */
-        if(sample[0] & 0x8000) sample[0] ^= 0x8000;
-        if(sample[1] & 0x8000) sample[1] ^= 0x8000;
+			sample[0] = (sample[0] + (data * l_vol));
+			sample[1] = (sample[1] + (data * r_vol));
+		}
 
-        /* Store samples in buffer */
-        *bufl++ = sample[0];
-        *bufr++ = sample[1];
+		if(sample[0] & 0x8000)
+			sample[0] ^= 0x8000;
 
-        /* Do next sample pair */
-        --length;
-    }
+		if(sample[1] & 0x8000)
+			sample[1] ^= 0x8000;
+
+		*buf_l++ = sample[0];
+		*buf_r++ = sample[1];
+
+		--length;
+	}
 }

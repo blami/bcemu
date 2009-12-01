@@ -21,9 +21,10 @@
  */
 typedef struct
 {
+	/* memory */
 	uint8 ram[0x8000];          /* PCE RAM (32k) */
 	uint8 vram[0x10000];        /* PCE video RAM (64k) */
-
+	uint8 satb[0x200];          /* PCE SATB (sprite attribute table) */
 	uint8 rom[0x100000];        /* PCE HuCard ROM (1M) */
 
 } t_pce;

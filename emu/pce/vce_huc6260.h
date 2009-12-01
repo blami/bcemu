@@ -21,6 +21,7 @@
  */
 typedef struct
 {
+	/* registry */
 	uint8 ctrl;                     /**< control */
 	uint8 data[0x400];              /**< color data */
 	uint16 addr;                    /**< address */
@@ -40,7 +41,7 @@ extern t_pce_vce* pce_vce;
 extern int          pce_vce_init();
 extern void         pce_vce_shutdown();
 
+extern uint8        pce_vce_r(int addr);
 extern void         pce_vce_w(int addr, int data);
-extern int          pce_vce_r(int addr);
 
 #endif /* __VCE_HUC6260_H */

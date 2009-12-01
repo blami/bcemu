@@ -16,6 +16,21 @@
  * Data types                                                                 *
  * -------------------------------------------------------------------------- */
 
+/**
+ * Sprite attributes.
+ */
+typedef struct {
+	int32   top;            /**< 0x00, top */
+	int32   bottom;         /**< 0x04, bottom (top+height) */
+	int32   xpos;           /**< 0x08, X position */
+	uint32  pat_addr_l;     /**< 0x0C, pattern address left-inverted */
+	uint32  pat_addr_r;     /**< 0x10, pattern address right-inverted */
+	uint32  height;         /**< 0x14, height */
+	uint8   palette;        /**< 0x18, sprite pallete index */
+	uint8   attr;           /**< 0x19, attributes (like enable, SPBG etc.) */
+	uint8   fill[6];
+} t_pce_vdc_sprite;
+
 typedef struct
 {
 	/* registry */
@@ -51,63 +66,48 @@ typedef struct
 	int8 addr_inc;          /**< address increment register set by 0x05 write */
 	uint8 dvssr;            /**< VRAM to SATB DMA trigger register */
 
-	/* write pointers */
 	uint16* vram_write;     /**< pointer to current write location in VRAM */
+	uint16* satb_write;     /**< pointer to current write location in SATB */
 
-	/* display properties (NOT HW) */
+	/* display properties */
 	int disp_width;         /**< display width (in pixels) */
 	int disp_height;        /**< display height (in pixels) */
 	int disp_width_old;     /**< old display width when viewport changes */
 	int disp_height_old;    /**< old display height when viewport changes */
+	uint32 y_offset;
+	uint32 byr;
 
-	/* background pattern cache */
-	uint8 bg_cache[0x20000];
-	uint16 bg_list[0x800];  /**< list of background patterns indexed by address >> 6 */
-	uint16 bg_list_i;       /**< current index in background pattern list */
-	uint8 bg_dirty[0x800];
+	/* background tile pattern cache */
+	uint8 bp_cache[0x20000];/**< background tile pattern cache */
+	uint16 bp_list[0x800];  /**< list of background patterns indexed by address >> 6 */
+	uint16 bp_list_i;       /**< current index in background pattern list */
+	uint8 bp_dirty[0x800];
 
 	/* sprite pattern cache */
-	uint8 sp_cache[0x80000];
+	uint8 sp_cache[0x80000];/**< sprite character cache */
 	uint16 sp_list[0x200];  /**< list of sprite patterns indexed by address >> 6 */
 	uint16 sp_list_i;       /**< current index in sprite pattern list */
 	uint16 sp_dirty[0x200];
 
 	/* used sprite list */
-	t_pce_vdc_sprite used_sprites[0x40];
-	uint8 used_sprite_list[0x40];
-	uint8 used_sprite_i;
+	t_pce_vdc_sprite sprite[0x40];
+	uint8 sprite_list[0x40];
+	uint8 sprite_list_i;
 
 	/* rendering */
-	int planes = -1         /**< plane enable, bit 0: background, bit 1: sprite */
-	uint16 pixel[2][0x100]  /**< VCE color to 16bit pixel table */
-	uint16 pixel_lut[0x200] /**< precalculated 16bit pixel lookup table */
-	uint32 bp_lut[0x10000]  /**< precalculated bit-plane lookup table */
+	int planes;                 /**< plane enable, bit 0: background, bit 1: sprite */
+	uint16 pixel[2][0x100];     /**< VCE color to 16bit pixel table */
+	uint16 pixel_lut[0x200];    /**< precalculated 16bit pixel lookup table */
+	uint32 bp_lut[0x10000];     /**< precalculated bit-plane lookup table */
 
+	/* screen buffer */
+	int buf_shift;
+	uint32 buf_col_mask;
+	uint32 buf_row_mask;
+	int buf_shift_table[4];
+	int buf_row_mask_table[4];
 
-	/* screen */
-/*
-extern int playfield_shift;
-extern uint32 playfield_col_mask;
-extern uint32 playfield_row_mask;
-extern int playfield_shift_table[];
-extern int playfield_row_mask_table[];
-*/
-} t_pce_vdc
-
-/**
- * Sprite. One SATB entry.
- */
-typedef struct {
-	int32   top;            /**< SATB 0x00, sprite top */
-	int32   bottom;         /**< SATB 0x04, sprite bottom */
-	int32   x;              /**< SATB
-} t_pce_vdc_sprite;
-
-/*
-extern uint8 objram[0x200];
-extern uint32 y_offset;
-extern uint32 byr;
-*/
+} t_pce_vdc;
 
 /* -------------------------------------------------------------------------- *
  * Constants                                                                  *
@@ -121,6 +121,12 @@ extern uint32 byr;
 #define VDC_RR          0x04    /**< scanline interrupt */
 #define VDC_OR          0x02    /**< sprite overflow */
 #define VDC_OC          0x01    /**< sprite collision */
+
+/* Sprite attribute flags */
+#define SP_ENABLE       0x80
+#define SP_SPBG         0x01
+#define SP_CGX          0x02
+#define SP_YFLIP        0x04
 
 /* -------------------------------------------------------------------------- *
  * Globals                                                                    *

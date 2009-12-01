@@ -23,57 +23,18 @@ t_pce_vdc* pce_vdc = NULL;
  * -------------------------------------------------------------------------- */
 
 /**
- * Initialize VDC (video display controller).
+ * Initialize VDC (video display controller) and rendering routines.
  */
 int pce_vdc_init()
 {
+	int i, j, x;
 	debug("VDC init");
 
 	pce_vdc = xmalloc(sizeof(t_pce_vdc));
-	pce_vdc_reset();
 
-	return 0;
-}
+	/* build lookup tables */
 
-/**
- * Reset VDC (video display controller).
- */
-void pce_vdc_reset()
-{
-	debug("VDC reset");
-	assert(pce && pce_vdc);
-
-	/* prepare video memory */
-	memset(pce->vram, 0, 0x10000);
-
-	/* reset registers */
-	memset(pce_vdc->reg, 0, 0x20);
-	status = 0;
-	latch = 0;
-	vram_latch = 0;
-	addr_inc = 1;
-	dvssr = 0;
-
-	/* reset background pattern cache */
-	memset(pce_vdc->bg_cache, 0, sizeof(pce_vdc->bg_cache));
-	memset(pce_vdc->bg_list, 0, sizeof(pce_vdc->bg_list));
-	pce_vdc->bg_list_i = 0;
-	memset(pce_vdc->bg_dirty, 0, sizeof(pce_vdc->bg_dirty));
-
-	/* reset sprite pattern cache */
-	memset(pce_vdc->sprite_cache, 0, sizeof(pce_vdc->sprite_cache));
-	memset(pce_vdc->sprite_list, 0, sizeof(pce_vdc->sprite_list));
-	sprite_list_i = 0;
-	memset(pce_vdc->sprite_dirty, 0, sizeof(pce_vdc->sprite_dirty));
-
-/*
-    playfield_shift = 6;
-    playfield_row_mask = 0x1f;
-    playfield_col_mask = 0xff;
-
-*/
-	/* pre-calculate bitplane to pixel lookup table */
-	int i, j, x;
+	/* bitplane to pixel lookup table */
 	for(i = 0; i < 0x100; i++)
 		for(j = 0; j < 0x100; j++)
 		{
@@ -92,7 +53,7 @@ void pce_vdc_reset()
 #endif /* LSB */
 		}
 
-	/* pre-calculate VCE to pixel lookup table */
+	/* VCE to pixel lookup table */
 	for(i = 0; i < 0x200; i++)
 	{
 		int r = (i >> 3) & 7;
@@ -101,7 +62,49 @@ void pce_vdc_reset()
 		pce_vdc->pixel_lut[i] = (r << 13 | g << 8 | b << 2) & 0xE71C;
 	}
 
-	return 1;
+	pce_vdc->planes = -1;
+
+	pce_vdc_reset();
+
+	return 0;
+}
+
+/**
+ * Reset VDC (video display controller).
+ */
+void pce_vdc_reset()
+{
+	debug("VDC reset");
+	assert(pce && pce_vdc);
+
+	/* prepare video memory */
+	memset(pce->vram, 0, 0x10000);
+
+	/* reset registers */
+	memset(pce_vdc->reg, 0, 0x20);
+	pce_vdc->status = 0;
+	pce_vdc->latch = 0;
+	pce_vdc->vram_latch = 0;
+	pce_vdc->addr_inc = 1;
+	pce_vdc->dvssr = 0;
+
+	pce_vdc->y_offset = 0;
+
+	/* reset background pattern cache */
+	memset(pce_vdc->bp_cache, 0, sizeof(pce_vdc->bp_cache));
+	memset(pce_vdc->bp_list, 0, sizeof(pce_vdc->bp_list));
+	pce_vdc->bp_list_i = 0;
+	memset(pce_vdc->bp_dirty, 0, sizeof(pce_vdc->bp_dirty));
+
+	/* reset sprite pattern cache */
+	memset(pce_vdc->sp_cache, 0, sizeof(pce_vdc->sp_cache));
+	memset(pce_vdc->sp_list, 0, sizeof(pce_vdc->sp_list));
+	pce_vdc->sp_list_i = 0;
+	memset(pce_vdc->sp_dirty, 0, sizeof(pce_vdc->sp_dirty));
+
+	pce_vdc->buf_shift = 6;
+	pce_vdc->buf_row_mask = 0x1f;
+	pce_vdc->buf_col_mask = 0xff;
 }
 
 /**
@@ -120,35 +123,35 @@ void pce_vdc_shutdown()
  * -------------------------------------------------------------------------- */
 
 /**
- * Macro to inline code for marking dirty place in background pattern cache
+ * Macro to inline code for marking dirty place in background tile cache
  * during writes/DMA.
  * \param addr          dirty address
  */
-#define MARK_BG_DIRTY(addr)                                     \
+#define bp_dirty(addr)                                          \
 {                                                               \
-	int id = (addr >> 4) & 0x7FF;                               \
-	if(pce_vdc->bg_dirty[id] == 0)                              \
+	int pat_addr = (addr >> 4) & 0x7FF; /* BAT lower 12b */     \
+	if(pce_vdc->bp_dirty[pat_addr] == 0)                        \
 	{                                                           \
-		pce_vdc->bg_list[pce_vdc->bg_list_i] = id;              \
-		pce_vdc->bg_list_i += 1;                                \
+		pce_vdc->bp_list[pce_vdc->bp_list_i] = pat_addr;        \
+		pce_vdc->bp_list_i += 1;                                \
 	}                                                           \
-	pce_vdc->bg_dirty[id] |= (1 << (addr & 0x07));              \
+	pce_vdc->bp_dirty[pat_addr] |= (1 << (addr & 0x07));        \
 }
 
 /**
- * Macro to inline code for marking dirty place in sprite pattern cache during
+ * Macro to inline code for marking dirty place in sprite character cache during
  * writes/DMA.
  * \param addr          dirty address
  */
-#define MARK_SP_DIRTY(addr)                                     \
+#define sp_dirty(addr)                                          \
 {                                                               \
-	int id = (addr >> 6) & 0x1FF;                               \
-	if(pce_vdc->sprite_dirty[id] == 0)                          \
+	int pat_addr = (addr >> 6) & 0x1FF; /* SATB offset 2 */     \
+	if(pce_vdc->sp_dirty[pat_addr] == 0)                        \
 	{                                                           \
-		pce_vdc->sp_list[pce_vdc->sp_list_i] = id;              \
-		pce_vdc->sp_list += 1;                                  \
+		pce_vdc->sp_list[pce_vdc->sp_list_i] = pat_addr;        \
+		pce_vdc->sp_list_i += 1;                                \
 	}                                                           \
-	pce_vdc->sp_dirty[id] |= (1 << (addr & 0x0F));              \
+	pce_vdc->sp_dirty[pat_addr] |= (1 << (addr & 0x0F));        \
 }
 
 /**
@@ -159,7 +162,7 @@ void pce_vdc_shutdown()
  */
 int vdc_r(int offset)
 {
-	assert(pce & pce_vdc);
+	assert(pce && pce_vdc);
 
 	/* check and store offset MSB */
 	int msb = (offset & 1);
@@ -188,11 +191,11 @@ int vdc_r(int offset)
 				uint16 addr = pce_vdc->reg[1] << 1;
 
 				/* read address */
-				tmp = (vram[(addr | msb) & 0xFFFF]);
+				tmp = (pce->vram[(addr | msb) & 0xFFFF]);
 
 				/* increase address if MSB */
 				if(msb)
-					pce_vdc->reg[1] += addr_inc;
+					pce_vdc->reg[1] += pce_vdc->addr_inc;
 
 				return tmp;
 			}
@@ -224,32 +227,34 @@ void vdc_w(int offset, int data)
 		/* write data */
 		case 0x0002:
 		case 0x0003:
-			uint8 latch = pce_vdc->latch;
+			//uint8 latch = pce_vdc->latch;
 
 			if(msb)
-				pce_vdc->reg[latch] = (pce_vdc->reg[latch] & 0x00FF) | (data << 8);
+				pce_vdc->reg[pce_vdc->latch] = (pce_vdc->reg[pce_vdc->latch] & 0x00FF) | (data << 8);
 			else
-				pce_vdc->reg[latch] = (pce_vdc->reg[latch] & 0xFF00) | (data);
+				pce_vdc->reg[pce_vdc->latch] = (pce_vdc->reg[pce_vdc->latch] & 0xFF00) | data;
 
-			switch(latch)
+			switch(pce_vdc->latch)
 			{
 				/* VWR: write VRAM at address specified in MAWR */
 				case 0x02:
 					if(msb)
 					{
 						uint16 vram_data = (data << 8 | pce_vdc->vram_latch);
-						if(vram_data != vram_write[(reg[0] & 0x7FFF)])
+						if(vram_data != pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)])
 						{
-							pce_vdc->vram_write[(reg[0] & 0x7FFF)] = vram_data;
-							MARK_BG_DIRTY(reg[0]);
-							MARK_SP_DIRTY(reg[0]);
+							pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)] = vram_data;
+
+							/* mark cache dirty */
+							bp_dirty(pce_vdc->reg[0]);
+							sp_dirty(pce_vdc->reg[0]);
 						}
 
 						/* autoincrement MAWR */
-						reg[0] += addr_inc;
+						pce_vdc->reg[0] += pce_vdc->addr_inc;
 					}
 					else
-						vram_latch = data;
+						pce_vdc->vram_latch = data;
 					break;
 
 				/* CR: IW address autoincrement value (1, 32, 64, 128) */
@@ -263,17 +268,17 @@ void vdc_w(int offset, int data)
 
 				/* BYR: viewport Y-offset from the background map origin */
 				case 0x08:
-					y_offset = byr = (reg[0x08] & 0x1FF);
-					y_offset &= playfield_col_mask;
+					pce_vdc->y_offset = pce_vdc->byr = (pce_vdc->reg[0x08] & 0x1FF);
+					pce_vdc->y_offset &= pce_vdc->buf_col_mask;
 					break;
 
 				/* MWR: configures virtual background size */
 				case 0x09:
 					if(!msb)
 					{
-						playfield_shift = playfield_shift_table[(data >> 4) & 3];
-						playfield_row_mask = playfield_row_mask_table[(data >> 4) & 3];
-						playfield_col_mask = ((data >> 6) & 1) ? 0x01FF : 0x00FF;
+						pce_vdc->buf_shift = pce_vdc->buf_shift_table[(data >> 4) & 3];
+						pce_vdc->buf_row_mask = pce_vdc->buf_row_mask_table[(data >> 4) & 3];
+						pce_vdc->buf_col_mask = ((data >> 6) & 1) ? 0x01FF : 0x00FF;
 					}
 					break;
 
@@ -284,6 +289,7 @@ void vdc_w(int offset, int data)
 					if(pce_vdc->disp_width != pce_vdc->disp_width_old)
 					{
 						debug("VDC viewport changed: w=%dpx", pce_vdc->disp_width);
+						// FIXME
 						//bitmap.viewport.ow = bitmap.viewport.w;
 						//bitmap.viewport.w = old_width = disp_width;
 						//bitmap.viewport.changed = 1;
@@ -292,11 +298,12 @@ void vdc_w(int offset, int data)
 
 				/* VDW: controls vertical display width (NOT end position) */
 				case 0x0D:
-					pce_vdc->disp_height = 1 + (reg[0x0D] & 0x01FF);
+					pce_vdc->disp_height = 1 + (pce_vdc->reg[0x0D] & 0x01FF);
 
 					if(pce_vdc->disp_height != pce_vdc->disp_height_old)
 					{
 						debug("VDC viewport changed: h=%dpx", pce_vdc->disp_height);
+						// FIXME
 						//bitmap.viewport.oh = bitmap.viewport.h;
 						//bitmap.viewport.h = old_height = disp_height;
 						//bitmap.viewport.changed = 1;
@@ -312,7 +319,7 @@ void vdc_w(int offset, int data)
 				/* SATB: points to SATB, we need to trigger VRAM to SATB DMA */
 				case 0x13:
 					if(msb)
-						dvssr = 1;
+						pce_vdc->dvssr = 1;
 					break;
 			}
 	}
@@ -330,14 +337,14 @@ void pce_vdc_dma()
 	 * b  1:    enable interrupt after VRAM to VRAM DMA completion
 	 * b  2:    0:increment sour address, 1:decrement sour address
 	 * b  3:    0:increment desr address, 1:decrement desr address */
-	int desr_inc = (reg[0x0F] >> 3) & 1;
-	int sour_inc = (reg[0x0F] >> 2) & 1;
-	int irq = (reg[0x0F] >> 1) & 1;
+	int desr_inc = (pce_vdc->reg[0x0F] >> 3) & 1;
+	int sour_inc = (pce_vdc->reg[0x0F] >> 2) & 1;
+	int irq = (pce_vdc->reg[0x0F] >> 1) & 1;
 
 	/* fetch address registers */
-	int sour = (reg[0x10] & 0x7FFF);
-	int desr = (reg[0x11] & 0x7FFF);
-	int lenr = (reg[0x12] & 0x7FFF);
+	int sour = (pce_vdc->reg[0x10] & 0x7FFF);
+	int desr = (pce_vdc->reg[0x11] & 0x7FFF);
+	int lenr = (pce_vdc->reg[0x12] & 0x7FFF);
 
 	debug("VDC DMA VRAM src:%04X %c dst: %04X %c len: %04X",
 		sour, sour_inc ? '-' : '+',
@@ -350,8 +357,8 @@ void pce_vdc_dma()
 		uint16 tmp = pce_vdc->vram_write[(sour & 0x7FFF)];
 		if(tmp != pce_vdc->vram_write[(desr & 0x7FFF)])
 		{
-			vram->write[(desr & 0x7FFF)] = tmp;
-			pce_vdc_bg_dirty(desr);
+			pce_vdc->vram_write[(desr & 0x7FFF)] = tmp;
+			pce_vdc_bp_dirty(desr);
 			pce_vdc_sprite_dirty(desr);
 		}
 		sour = (sour_inc) ? (sour - 1) : (sour + 1);
@@ -360,7 +367,7 @@ void pce_vdc_dma()
 	while (lenr--);
 
 	/* update status flag register */
-	pce_vdc->status |= STATUS_DV;
+	pce_vdc->status |= VDC_DV;
 
 	/* cause IRQ if enabled in DCR */
 	if(irq)
@@ -372,54 +379,185 @@ void pce_vdc_dma()
  * -------------------------------------------------------------------------- */
 
 /**
- * Update background pattern cache. Iterate through bg_list and find dirty
- * entries and renew them according to VRAM/bitplane content.
+ * Pre-calculate sprite list of sprites used in frame.
+ * \return              sprite list index
  */
-static void pce_vdc_bg_cache()
+int pce_vdc_sprite_update()
 {
+	assert(pce && pce_vdc);
+
+	uint16 *satb = (uint16*)&pce->satb[0];
+	/* FIXME: change pat_addr to uint16 */
+	int pat_addr;   /* SATB offset 2 */
+	int attr;       /* SATB offset 3 sprite flags:
+		b 0-3       sprite color indexes (which palettes to use)
+		b 4-6       ??
+		b 7         SPBG
+		            0 = in front of BG
+		            1 = behind BG
+		b 8         CGX cell width:
+		            0 = 1 cell (16px)
+		            1 = 2 cells (32px)
+		b 9-A       ??
+		b B         X-invert
+		b C-D       CGY cell height
+		            00 = 1 cell (16px)
+		            01 = 2 cells (32px)
+		            10 = ??
+		            11 = 4 cells (64px)
+		b E         ??
+		b F         Y-invert
+		*/
+	int xpos, ypos;
+	int cgx, cgy;
+	int xflip, yflip;
+	int width, height;
+	int spbg;
 	int i;
-	uint16 id;
-	uint8 x, y, c;
-	uint16 index1, index2;
-	uint32 tmp;
+	uint32 flip;    /* combination of yflip and xflip */
 
-	if(!pce_vdc->bg_list_i)
-		return;
+	/* prepare list memory */
+	pce_vdc->sprite_list_i = 0;
+	memset(&pce_vdc->sprite_list, 0, sizeof(pce_vdc->sprite_list));
+	memset(&pce_vdc->sprite, 0, sizeof(pce_vdc->sprite));
 
-	for(i = 0; i < pce_vdc->bg_list_i; i += 1)
+	/* fill list */
+	for(i = 0; i < 0x40; i++)
 	{
-		/* lookup pattern id in list */
-		id = pce_vdc->bg_list[i];
-		pce_vdc->bg_list[i] = 0;
+		/* read attributes from SATB */
+		ypos = satb[(i << 2) | 0];
+		xpos = satb[(i << 2) | 1];
+		pat_addr = satb[(i << 2) | 2];
+		attr = satb[(i << 2) | 3];
 
-		for(y = 0; y < 8; y += 1)
-			if(pce_vdc->bg_dirty[id] & (1 << y))
-			{
-				index1 = pce_vdc->vram_write[(id << 4) | y];
-				index2 = pce_vdc->vram_write[(id << 4) | y | (8)];
+		/* correct x and y position */
+		ypos &= 0x3FF;
+		xpos &= 0x3FF;
 
-				tmp = (bp_lut[index1] >> 2) | bp_lut[index2];
+		if(xpos && ypos)
+		{
+			ypos -= 64;
+			xpos -= 32;
 
-				for(x = 0; x < 8; x += 1)
-				{
-					c = (tmp >> (x << 2)) & 0x0F;
-					pce_vdc->bg_cache[(id << 6) | (y << 3) | (x)] = c;
-				}
-			}
+			if(ypos >= 0x100)
+				continue;
+			if(xpos >= 0x200)
+				continue;
 
-		pce_vdc->bg_dirty[id] = 0;
+			/* check CGY attr */
+			cgy = (attr >> 12) & 3;
+			cgy |= (cgy >> 1);
+
+			/* calculate sprite height */
+			height = (cgy + 1) << 4;
+			if((ypos + height) < 0)
+				continue;
+
+			/* check CGX attr */
+			cgx = (attr >> 8) & 1;
+
+			/* calculate sprite width */
+			width = (cgx) ? 32 : 16;
+			if((xpos + width) < 0)
+				continue;
+
+			/* check X,Y-flip attr and store both to flip */
+			xflip = (attr >> 11) & 1;
+			yflip = (attr >> 15) & 1;
+			flip = ((xflip << 9) | (yflip << 10)) & 0x600;
+
+			/* check SPBG */
+			spbg = !(attr & 0x80);
+
+			/* calculate pattern address */
+			pat_addr = (pat_addr >> 1) & 0x1FF;
+			/* apply transformations (CGY, CGX, X-flip and Y-flip) */
+			pat_addr &= ~((cgy << 1) | cgx);
+			pat_addr |= flip;
+
+			if(xflip && cgx)
+				pat_addr ^= 1;
+
+			/* store sprite to sprite list */
+			pce_vdc->sprite[i].top = ypos;
+			pce_vdc->sprite[i].bottom = ypos + height;
+			pce_vdc->sprite[i].xpos = xpos;
+			pce_vdc->sprite[i].pat_addr_l = pat_addr;
+			pce_vdc->sprite[i].pat_addr_r = pat_addr ^ 1;
+			pce_vdc->sprite[i].height = (height - 1);
+			pce_vdc->sprite[i].palette = (attr & 0x0F) << 4;
+
+			/* set flags */
+			if(yflip)
+				pce_vdc->sprite[i].attr |= SP_YFLIP;
+			if(cgx)
+				pce_vdc->sprite[i].attr |= SP_CGX;
+			if(spbg)
+				pce_vdc->sprite[i].attr |= SP_SPBG;
+
+			/* add entry to used sprite list and increase index */
+			pce_vdc->sprite_list[pce_vdc->sprite_list_i] = i;
+			pce_vdc->sprite_list_i++;
+		}
 	}
 
-	pce_vdc->bg_list_i = 0;
+	/* return used sprite list last index */
+	return pce_vdc->sprite_list_i;
 }
 
 /**
- * Update sprite pattern cache.
+ * Update background tile cache.
  */
-static void pce_vdc_sprite_cache()
+static void pce_vdc_bp_cache()
 {
 	int i;
-	uint16 id;
+	uint16 pat_addr;    /* BAT lower 12b */
+	uint8 x, y;
+	uint16 i1, i2;
+	uint8 c;
+	uint32 tmp;
+
+	if(!pce_vdc->bp_list_i)
+		return;
+
+	for(i = 0; i < pce_vdc->bp_list_i; i += 1)
+	{
+		/* lookup pat_addr in list */
+		pat_addr = pce_vdc->bp_list[i];
+		pce_vdc->bp_list[i] = 0;
+
+		for(y = 0; y < 8; y += 1)
+			if(pce_vdc->bp_dirty[pat_addr] & (1 << y))
+			{
+				/* color index (planar) */
+				i1 = pce_vdc->vram_write[(pat_addr << 4) | y];
+				i2 = pce_vdc->vram_write[(pat_addr << 4) | y | 8];
+
+				/* bitplane table lookup */
+				tmp = (pce_vdc->bp_lut[i1] >> 2) | pce_vdc->bp_lut[i2];
+
+				/* store background tile into cache */
+				for(x = 0; x < 8; x += 1)
+				{
+					/* color index */
+					c = (tmp >> (x << 2)) & 0x0F;
+					pce_vdc->bp_cache[(pat_addr << 6) | (y << 3) | x] = c;
+				}
+			}
+
+		pce_vdc->bp_dirty[pat_addr] = 0;
+	}
+
+	pce_vdc->bp_list_i = 0;
+}
+
+/**
+ * Update sprite character cache.
+ */
+static void pce_vdc_sp_cache()
+{
+	int i;
+	uint16 pat_addr;    /* SATB offset 2 */
 	uint8 x, y, c;
 	uint8 i0, i1, i2, i3;
 	uint16 b0, b1, b2, b3;
@@ -429,142 +567,163 @@ static void pce_vdc_sprite_cache()
 
 	for(i = 0; i < pce_vdc->sp_list_i; i += 1)
 	{
-		/* lookup pattern id in list */
-		id = pce_vdc->sp_list[i];
+		/* lookup pat_addr in list */
+		pat_addr = pce_vdc->sp_list[i];
 		pce_vdc->sp_list[i] = 0;
 
-		for(y = 0; y < 0x10; y += 1)
-			if(pce_vdc->sp_dirty[id] & (1 << y))
+		for(y = 0; y < 0x10; y++)
+			if(pce_vdc->sp_dirty[pat_addr] & (1 << y))
 			{
-				b0 = pce_vdc->vram_write[(id << 6) + y + (0x00)];
-				b1 = pce_vdc->vram_write[(id << 6) + y + (0x10)];
-				b2 = pce_vdc->vram_write[(id << 6) + y + (0x20)];
-				b3 = pce_vdc->vram_write[(id << 6) + y + (0x30)];
+				/* sprite character bytes (planar) */
+				b0 = pce_vdc->vram_write[(pat_addr << 6) + y + 0x00];
+				b1 = pce_vdc->vram_write[(pat_addr << 6) + y + 0x10];
+				b2 = pce_vdc->vram_write[(pat_addr << 6) + y + 0x20];
+				b3 = pce_vdc->vram_write[(pat_addr << 6) + y + 0x30];
 
+				/* store sprite character into cache */
 				for(x = 0; x < 0x10; x += 1)
 				{
+					/* color index (planar) */
 					i0 = (b0 >> (x ^ 0x0F)) & 1;
 					i1 = (b1 >> (x ^ 0x0F)) & 1;
 					i2 = (b2 >> (x ^ 0x0F)) & 1;
 					i3 = (b3 >> (x ^ 0x0F)) & 1;
-
 					c = (i3 << 3 | i2 << 2 | i1 << 1 | i0);
 
-					pce_vdc->sp_cache[(id << 8)
-						| (y << 4) | (x)] = c;
-					pce_vdc->sp_cache[0x20000 | (id << 8)
+					pce_vdc->sp_cache[(pat_addr << 8)
+						| (y << 4) | x] = c;
+					pce_vdc->sp_cache[0x20000 | (pat_addr << 8)
 						| (y << 4) | (x ^ 0x0F)] = c;
-					pce_vdc->sp_cache[0x40000 | (id << 8)
-						| ((y ^ 0x0F) << 4) | (x)] = c;
-					pce_vdc->sp_cache[0x60000 | (id << 8)
+					pce_vdc->sp_cache[0x40000 | (pat_addr << 8)
+						| ((y ^ 0x0F) << 4) | x] = c;
+					pce_vdc->sp_cache[0x60000 | (pat_addr << 8)
 						| ((y ^ 0x0F) << 4) | (x ^ 0x0F)] = c;
 				}
 			}
 
-		pce_vdc->sp_dirty[id] = 0;
+		pce_vdc->sp_dirty[pat_addr] = 0;
 	}
 
 	pce_vdc->sp_list_i = 0;
 }
 
 /**
- * Render bg plane.
+ * Render background tile pattern in line.
  */
-void render_bg_16(int line, t_video* video)
+void pce_vdc_render_bp(int line, t_video* video)
 {
-    uint16 *nt;
-    uint8 *src, palette;
-    uint16 *dst;
-    int column, name, attr, x, shift, v_line, nt_scroll;
-    int xscroll = (reg[7] & 0x03FF);
-    int end = disp_nt_width;
+	uint16 *nt;
+	uint8 *src, palette;
+	uint16 *dst;
+	int column, pat_addr, attr, x, shift, v_line, nt_scroll;
+	int xscroll = (pce_vdc->reg[7] & 0x03FF);
+	//int end = disp_nt_width;
+	int end = pce_vdc->disp_width >> 3;
 
-    /* Offset in pattern, in lines */
-    v_line = (y_offset & 7);
+	int Bpp = video->bpp >> 3;           /* depth in bytes */
+	int Bwidth = video->width * Bpp;     /* width in bytes (pitch) */
 
-    /* Offset in name table, in columns */
-    nt_scroll = (xscroll >> 3);
+	/* offset in pattern, in lines */
+	v_line = (pce_vdc->y_offset & 7);
 
-    /* Offset in column, in pixels */
-    shift = (xscroll & 7);
+	/* offset in name table, in columns */
+	nt_scroll = (xscroll >> 3);
 
-    /* Draw an extra tile for the last column */
-    if(shift) end += 1;
+	/* offset in column, in pixels */
+	shift = (xscroll & 7);
 
-    /* Point to current offset within name table */
-    nt = (uint16 *)&vram[(y_offset >> 3) << playfield_shift];
+	/* draw an extra tile for the last column */
+	if(shift)
+		end += 1;
 
-    /* Point to start in line buffer */
-    dst = (uint16 *)&bitmap.data[(line * bitmap.pitch) + ((0x20 + (0 - shift)) << 1)];
+	/* point to current offset within name table */
+	nt = (uint16 *)&pce->vram[(pce_vdc->y_offset >> 3) << pce_vdc->buf_shift];
 
-    /* Draw columns */
-    for(column = 0; column < end; column += 1)
-    {
-        /* Get attribute */
-        attr = nt[(column + nt_scroll) & playfield_row_mask];
+	/* point to start in line buffer */
+	dst = (uint16 *)&video->pixeldata[(line * Bwidth) + ((0x20 + (0 - shift)) << 1)];
 
-        /* Extract name and palette bits */
-        name = (attr & 0x07FF);
-        palette = (attr >> 8) & 0xF0;
+	/* draw columns */
+	for(column = 0; column < end; column += 1)
+	{
+		/* get attribute */
+		attr = nt[(column + nt_scroll) & pce_vdc->buf_row_mask];
 
-        /* Point to current pattern line */
-        src = &bg_pattern_cache[(name << 6) + (v_line << 3)];
+		/* extract name and palette bits */
+		pat_addr = (attr & 0x07FF);
+		palette = (attr >> 8) & 0xF0;
 
-        /* Draw column */
-        for(x = 0; x < 8; x += 1)
-        {
-            dst[(column << 3) | (x)] = pixel[0][(src[x] | palette)];
-        }
-    }
+		/* point to current pattern line */
+		src = &pce_vdc->bp_cache[(pat_addr << 6) + (v_line << 3)];
+
+		/* draw column */
+		for(x = 0; x < 8; x += 1)
+		{
+			dst[(column << 3) | (x)] = pce_vdc->pixel[0][(src[x] | palette)];
+		}
+	}
 }
 
-void render_obj_16(int line)
+/**
+ * Render sprite pattern in specific line.
+ */
+void pce_vdc_render_sp(int line, t_video* video)
 {
-    t_sprite *p;
-    int j, i, x, c;
-    int name, name_mask;
-    int v_line;
-    uint8 *src;
-    int nt_line;
-    uint16 *dst;
+	t_pce_vdc_sprite* sp;
+	int i, j;
+	int x;
+	int c;
+	int pat_addr, pat_addr_mask;
+	int v_line;
+	uint8 *src;
+	int nt_line;
+	uint16 *dst;
 
-    for(j = (used_sprite_index - 1); j >= 0; j -= 1)
-    {
-        i = used_sprite_list[j];
-        p = &sprite_list[i];
+	int Bpp = video->bpp >> 3;           /* depth in bytes */
+	int Bwidth = video->width * Bpp;     /* width in bytes (pitch) */
 
-        if( (line >= p->top) && (line < p->bottom))
-        {
-            v_line = (line - p->top) & p->height;
-            nt_line = v_line;
-            if(p->flags & FLAG_YFLIP) nt_line = (p->height - nt_line);
-            name_mask = ((nt_line >> 4) & 3) << 1;
-            name = (p->name_left | name_mask);
-            v_line &= 0x0F;
+	for(j = (pce_vdc->sprite_list_i - 1); j >= 0; j -= 1)
+	{
+		/* fetch sprite pattern */
+		i = pce_vdc->sprite_list[j];
+		sp = &pce_vdc->sprite[i];
 
-            src = &obj_pattern_cache[(name << 8) | ((v_line & 0x0f) << 4)];
-            dst = (uint16 *)&bitmap.data[(line * bitmap.pitch) + (((0x20+p->xpos) & 0x1ff) * (bitmap.granularity))];
+		if((line >= sp->top) && (line < sp->bottom))
+		{
+			v_line = (line - sp->top) & sp->height;
+			nt_line = v_line;
 
-            for(x = 0; x < 0x10; x += 1)
-            {
-                c = src[x];
-                if(c) dst[x] = pixel[1][((c) | p->palette)];
-            }
+			if(sp->attr & SP_YFLIP)
+				nt_line = (sp->height - nt_line);
 
-            if(p->flags & FLAG_CGX)
-            {
-                name = (p->name_right | name_mask);
-                src = &obj_pattern_cache[(name << 8) | ((v_line & 0x0f) << 4)];
-                dst += 0x10;
+			pat_addr_mask = ((nt_line >> 4) & 3) << 1;
+			pat_addr = (sp->pat_addr_l | pat_addr_mask);
+			v_line &= 0x0F;
 
-                for(x = 0; x < 0x10; x += 1)
-                {
-                    c = src[x];
-                    if(c) dst[x] = pixel[1][((c) | p->palette)];
-                }
-            }
-        }
-    }
+			src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0f) << 4)];
+			dst = (uint16 *)&video->pixeldata[(line * Bwidth) + (((0x20+sp->xpos) & 0x1ff) * (Bpp))];
+
+			for(x = 0; x < 0x10; x += 1)
+			{
+				c = src[x];
+				if(c)
+					dst[x] = pce_vdc->pixel[1][((c) | sp->palette)];
+			}
+
+			if(sp->attr & SP_CGX)
+			{
+				pat_addr = (sp->pat_addr_r | pat_addr_mask);
+				src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0f) << 4)];
+				dst += 0x10;
+
+				for(x = 0; x < 0x10; x += 1)
+				{
+					c = src[x];
+					if(c)
+						dst[x] = pce_vdc->pixel[1][((c) | sp->palette)];
+				}
+			}
+		}
+	}
 }
 
 
@@ -577,108 +736,30 @@ void pce_vdc_render_line(int line, t_video* video)
 {
 	/* render background plane line (if enabled)
 	 * VDC CR (0x05) bit 7 = bg enable/disable */
-	if((reg[0x05] & 0x80) && (plane_enable & 1))
+	if((pce_vdc->reg[0x05] & 0x80) && (pce_vdc->planes & 1))
 	{
-		pce_vdc_bg_cache();
+		pce_vdc_bp_cache_update();
 		pce_vdc_render_bg(line, video);
 	}
 	/* if disabled fill bg with black color */
 	else
 	{
 		int i;
-		int Bpp = video.bpp >> 3;           /* depth in bytes */
-		int Bwidth = video.width * Bpp;     /* width in bytes (pitch) */
+		int Bpp = video->bpp >> 3;           /* depth in bytes */
+		int Bwidth = video->width * Bpp;     /* width in bytes (pitch) */
 
 		/* set pointer to viewport begin */
-		uint16* ptr = (uint16*)video->pixeldata[
-			(line * Bwidth) + (video.vp.x * Bpp)];
+		uint16* ptr = (uint16*)&video->pixeldata[(line * Bwidth) + (video->viewport.x * Bpp)];
 		/* fill viewport with black pixels */
 		for(i = 0; i < pce_vdc->disp_width; i++)
-			ptr[i] = pixel[0][0];
+			ptr[i] = pce_vdc->pixel[0][0];
 	}
 
 	/* render sprite plane line (if enabled)
 	 * VDC CR (0x05) bit 6 = sprite enable/disable */
-	if((reg[0x05] & 0x40) && (plane_enable & 2))
+	if((pce_vdc->reg[0x05] & 0x40) && (pce_vdc->planes & 2))
 	{
 		pce_vdc_sp_cache();
 		pce_vdc_render_sp(line, video);
 	}
 }
-
-
-int make_sprite_list(void)
-{
-    uint16 *sat = &objramw[0];
-    int xpos, ypos, name, attr;
-    int cgx, xflip, cgy, yflip;
-    int width, height;
-    int i;
-    uint32 flip;
-
-    used_sprite_index = 0;
-    memset(&used_sprite_list, 0, sizeof(used_sprite_list));
-
-    memset(&sprite_list, 0, sizeof(sprite_list));
-
-    for(i = 0; i < 0x40; i += 1)
-    {
-        ypos = sat[(i << 2) | (0)];
-        xpos = sat[(i << 2) | (1)];
-        name = sat[(i << 2) | (2)];
-        attr = sat[(i << 2) | (3)];
-
-        ypos &= 0x3FF;
-        xpos &= 0x3FF;
-
-        if(xpos && ypos)
-        {
-            ypos -= 64;
-            if(ypos >= 0x100) continue;
-            cgy = (attr >> 12) & 3;
-            cgy |= (cgy >> 1);
-            height = (cgy + 1) << 4;
-            if((ypos + height) < 0) continue;
-
-            xpos -= 32;
-            if(xpos >= 0x200) continue;
-            cgx = (attr >> 8) & 1;
-            width  = (cgx) ? 32 : 16;
-            if((xpos + width) < 0) continue;
-
-            xflip = (attr >> 11) & 1;
-            yflip = (attr >> 15) & 1;
-            flip = ((xflip << 9) | (yflip << 10)) & 0x600;
-
-            name = (name >> 1) & 0x1FF;
-            name &= ~((cgy << 1) | cgx);
-            name |= flip;
-            if(xflip && cgx) name ^= 1;
-
-            sprite_list[i].top = ypos;
-            sprite_list[i].bottom = ypos + height;
-            sprite_list[i].xpos = xpos;
-            sprite_list[i].name_left = name;
-            sprite_list[i].name_right = name ^ 1;
-            sprite_list[i].height = (height - 1);
-            sprite_list[i].palette = (attr & 0x0F) << 4;
-
-            if(yflip)
-                sprite_list[i].flags |= FLAG_YFLIP;
-
-            if(cgx)
-                sprite_list[i].flags |= FLAG_CGX;
-
-            if(!(attr & 0x80))
-                sprite_list[i].flags |= FLAG_PRIORITY;
-
-            used_sprite_list[used_sprite_index] = (i);
-            used_sprite_index += 1;
-        }
-    }
-
-    return (used_sprite_index);
-}
-
-
-

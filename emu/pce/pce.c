@@ -70,6 +70,9 @@ void pce_reset()
  * PCE                                                                        *
  * -------------------------------------------------------------------------- */
 
+/**
+ * Run emulation for one frame.
+ */
 void pce_frame()
 {
 

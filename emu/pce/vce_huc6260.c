@@ -70,8 +70,8 @@ uint8 pce_vce_r(int addr)
 
 	if((addr & ~1) == 0x0404)
 	{
-		uint8 temp = vce.data[((pce_vce.addr & 0x1FF) << 1) | (msb)];
-		/* increment address on MSB */
+		uint8 temp = pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)];
+		/* increment address if MSB */
 		if(msb)
 			pce_vce->addr += 1;
 		return (temp);
@@ -104,45 +104,50 @@ void pce_vce_w(int addr, int data)
 		/* address */
 		case 0x402:
 			if(!msb)
-				vce->addr = (vce->addr & 0x0100) | (data);
+				pce_vce->addr = (pce_vce->addr & 0x0100) | (data);
 			else
-				vce.addr = (vce->addr & 0x00FF) | ((data & 1) << 8);
+				pce_vce->addr = (pce_vce->addr & 0x00FF) | ((data & 1) << 8);
 			break;
 
 		/* data */
 		case 0x404:
-			if(data != vce->data[((vce->addr & 0x1FF) << 1) | (msb)])
+			if(data != pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)])
 			{
-				vce->data[((vce->addr & 0x1FF) << 1) | (msb)] = data;
-				if((vce.addr & 0x0F) != 0x00)
+				pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)] = data;
+				if((pce_vce->addr & 0x0F) != 0x00)
 				{
-					uint16 tmp = *(uint16 *)vce->data[(vce->addr << 1)];
+					uint16 tmp = *(uint16 *)&pce_vce->data[(pce_vce->addr << 1)];
 #ifndef LSB
 					tmp = (tmp >> 8) | (tmp << 8);
 #endif
-					//FIXME pixel[(vce.addr >> 8) & 1][(vce.addr & 0xFF)] = pixel_lut[temp];
-					temp = (temp >> 1) & 0xFF;
-					xlat[(vce.addr >> 8) & 1][(vce.addr & 0xFF)] = temp;
+					//FIXME
+					//pce_vdc->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vdc->pixel_lut[temp];
+					tmp = (tmp >> 1) & 0xFF;
+					//xlat[(vce.addr >> 8) & 1][(vce.addr & 0xFF)] = temp;
 				}
 
-				/* Update overscan color */
-				if((vce.addr & 0x0F) == 0x00)
+				/* update overscan color */
+				if((pce_vce->addr & 0x0F) == 0x00)
 				{
 					int n;
-					uint16 temp = *(uint16 *)&vce.data[0];
+					uint16 tmp = *(uint16 *)&pce_vce->data[0];
 #ifndef LSB
-					temp = (temp >> 8) | (temp << 8);
+					tmp = (tmp >> 8) | (tmp << 8);
 #endif
+					// FIXME
+					/*
 					for(n = 0; n < 0x10; n += 1)
 						pixel[0][(n << 4)] = pixel_lut[temp];
 					temp = (temp >> 1) & 0xFF;
 					for(n = 0; n < 0x10; n += 1)
 						xlat[0][(n << 4)] = temp;
+					*/
 				}
 			}
 
-			/* Increment VCE address on access to the MSB data port */
-			if(msb) vce.addr += 1;
+			/* increment address if MSB */
+			if(msb)
+				pce_vce->addr += 1;
 			break;
 	}
 }

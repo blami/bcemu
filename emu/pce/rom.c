@@ -26,7 +26,7 @@ int pce_rom_parse()
 	uint8* buf = NULL, *ptr = NULL;
 	int size;
 
-	debug("ROM parsing rom image");
+	debug("ROM parsing ROM image");
 	assert(emu_rom && emu_rom->data);
 	assert(pce);
 

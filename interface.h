@@ -17,7 +17,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Video data.
+ * Structure containing data needed for video rendering.
  */
 typedef struct
 {
@@ -44,7 +44,7 @@ typedef struct
 } t_video;
 
 /**
- * Audio data.
+ * Structure containing data needed for audio playback.
  */
 typedef struct
 {
@@ -55,25 +55,16 @@ typedef struct
 } t_audio;
 
 /**
- * Input data.
+ * Structure containing data needed for input device handling.
  */
 typedef struct
 {
 	int quit;           /**< UI quit signal */
-
-	/* TODO refactor */
-	uint8 dev[5];       /* Can be any of the DEVICE_* values */
-	uint32 pad[5];      /* Can be any of the INPUT_* bitmasks */
-	uint32 system;      /* Can be any of the SYSTEM_* bitmasks */
 
 } t_input;
 
 /* -------------------------------------------------------------------------- *
  * Constants                                                                  *
  * -------------------------------------------------------------------------- */
-
-/*
- * Input constants
- */
 
 #endif /* __INTERFACE_H */

@@ -25,7 +25,8 @@ typedef signed int                          int32;
 __extension__ typedef signed long long      int64;
 
 /**
- * PAIR union is pair of two 16bit UINTs affected by host system endianess.
+ * Pair of two 16bit UINTs affected by host system endianess. Common practice
+ * in emulator programming.
  */
 typedef union {
 #ifdef LSB

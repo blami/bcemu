@@ -39,7 +39,7 @@
 t_emu emu_modules_emu[] =
 {
 #ifdef EMU_PCE
-	/* NEC PC Engine emulator */
+	/* NEC PCEngine emulator */
 	{
 		"pce",
 		pce_init,

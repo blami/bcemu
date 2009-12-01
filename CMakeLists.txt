@@ -110,6 +110,8 @@ IF(EMU_PCE)
 	ADD_LIBRARY(emu_pce STATIC
 		emu/pce/pce.c
 		emu/pce/cpu_huc6280.c
+		emu/pce/vce_huc6260.c
+		emu/pce/vdc_huc6270.c
 		emu/pce/psg.c
 		emu/pce/rom.c
 	)

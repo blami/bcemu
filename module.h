@@ -24,7 +24,9 @@ typedef struct
 	char* id;                   /* emulator identifier (e.g. pce) */
 
 	int (*init)();
+	void (*reset)();
 	void (*shutdown)(); 
+	void (*frame)();
 
 } t_emu;
 
@@ -39,7 +41,7 @@ typedef struct
 	void (*shutdown)();
 	void (*update_audio)();
 	void (*update_video)();
-	void (*update_input)(void*);
+	void (*update_input)();
 
 } t_ui;
 

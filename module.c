@@ -29,7 +29,7 @@ t_emu* module_emu_find(const char* emu_id)
 	if(emu_id == NULL)
 		return NULL;
 
-	debug("finding emulator module: `%s'", emu_id);
+	debug("searching emulator module: `%s'", emu_id);
 
 	/* find specified emulator */
 	while(1)
@@ -65,7 +65,7 @@ t_ui* module_ui_find(const char* ui_id)
 	if(ui_id == NULL)
 		return NULL;
 
-	debug("finding UI module: `%s'", ui_id);
+	debug("searching UI module: `%s'", ui_id);
 
 	/* find specified UI */
 	while(1)

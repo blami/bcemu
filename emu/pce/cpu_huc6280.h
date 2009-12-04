@@ -21,7 +21,7 @@
  */
 typedef struct
 {
-	/* registry */
+	/* registers */
 	pair ppc;                   /**< previous program counter */
 	pair pc;                    /**< program counter */
 	pair sp;                    /**< stack pointer */
@@ -41,8 +41,8 @@ typedef struct
 	int (*irq_callback)(int);   /**< IRQ handler callback */
 
 	/* timer */
-	uint8 timer_status;         /**< timer status */
-	uint8 timer_ack;            /**< timer acknowledge */
+	int timer_status;           /**< timer status */
+	int timer_ack;              /**< timer acknowledge */
 	int timer_value;            /**< timer interrupt */
 	int timer_load;             /**< reload value */
 
@@ -58,14 +58,14 @@ typedef struct
 /*
  * Status register (P) flag indexes.
  */
-#define _pC             0x01        /**< carry flag */
-#define _pZ             0x02        /**< zero flag */
-#define _pI             0x04        /**< interrupt disable flag */
-#define _pD             0x08        /**< decimal mode flag */
-#define _pB             0x10        /**< break flag */
-#define _pT             0x20        /**< accumulator-ish mode (no clue what t means ???) */
-#define _pV             0x40        /**< overflow */
-#define _pN             0x80        /**< negative */
+#define _pC             0x01    /**< carry flag */
+#define _pZ             0x02    /**< zero flag */
+#define _pI             0x04    /**< interrupt disable flag */
+#define _pD             0x08    /**< decimal mode flag */
+#define _pB             0x10    /**< break flag */
+#define _pT             0x20    /**< accumulator-ish mode (no clue what t means ???) */
+#define _pV             0x40    /**< overflow */
+#define _pN             0x80    /**< negative */
 
 /*
  * Registry shortcuts.
@@ -100,8 +100,8 @@ typedef struct
 /*
  * IRQs.
  */
-#define CLEAR_LINE      0           /**< clear IRQ line */
-#define ASSERT_LINE     1           /**< assert IRQ line */
+#define CLEAR_LINE      0       /**< clear IRQ line */
+#define ASSERT_LINE     1       /**< assert IRQ line */
 
 /*
  * Interrupt vectors.

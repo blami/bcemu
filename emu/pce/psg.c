@@ -9,6 +9,7 @@
 /* psg.c: NEC PCEngine HuC6280 PSG (programmable sound generator) emulator */
 
 #include "bc_emu.h"
+#include "emu/pce/pce_main.h"
 #include "emu/pce/cpu_huc6280.h"
 #include "emu/pce/vce_huc6260.h"
 #include "emu/pce/vdc_huc6270.h"
@@ -71,6 +72,8 @@ void pce_psg_shutdown()
 void pce_psg_w(uint16 addr, uint8 data)
 {
 	assert(pce_psg);
+
+	//debug("PSG write: addr=%08x msb=%d data=%d", addr, msb, data);
 
 	switch(addr)
 	{

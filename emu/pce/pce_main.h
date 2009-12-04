@@ -6,10 +6,10 @@
  * This is free software licensed under MIT license. See LICENSE.             *
  ******************************************************************************/
 
-/* vce_huc6260.h: NEC PCEngine HuC6280 VCE emulator */
+/* pce.h: NEC PCEngine emulator header. */
 
-#ifndef __VCE_HUC6260_H
-#define __VCE_HUC6260_H
+#ifndef __PCE_MAIN_H
+#define __PCE_MAIN_H
 
 
 /* -------------------------------------------------------------------------- *
@@ -17,38 +17,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * NEC PCEngine VCE (video color encoder).
+ * NEC PCEngine emulator.
  */
 typedef struct
 {
-	/* registers */
-	uint8 ctrl;                     /**< control */
-	uint8 data[0x400];              /**< color data */
-	uint16 addr;                    /**< address */
+	/* memory */
+	uint8 ram[0x8000];              /* PCE RAM (32k) */
+	uint8 vram[0x10000];            /* PCE video RAM (64k) */
+	uint8 satb[0x200];              /* PCE SATB (sprite attribute table) */
+	uint8 rom[0x100000];            /* PCE HuCard ROM (1M) */
 
-	/* pre-calculated lookup tables */
-	uint16 pixel_lut[0x200];        /**< pixel lookup table */
-	uint32 bp_lut[0x10000];         /**< bit-plane lookup table */
-
-	/* pixel table */
-	uint16 pixel[2][0x100];         /**< VCE color to 16bit pixel table */
-
-} t_pce_vce;
+} t_pce;
 
 /* -------------------------------------------------------------------------- *
  * Globals                                                                    *
  * -------------------------------------------------------------------------- */
 
-extern t_pce_vce* pce_vce;
+extern t_pce*   pce;
 
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */
 
-extern int          pce_vce_init();
-extern void         pce_vce_shutdown();
+extern int      pce_init();
+extern void     pce_reset();
+extern void     pce_shutdown();
 
-extern uint8        pce_vce_r(int addr);
-extern void         pce_vce_w(int addr, int data);
-
-#endif /* __VCE_HUC6260_H */
+#endif /* __SDL_H */

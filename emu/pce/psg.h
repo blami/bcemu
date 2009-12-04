@@ -21,23 +21,23 @@
  */
 typedef struct
 {
-	uint8 sel_ch;               /**< selected channel */
+	uint8 sel_ch;                   /**< selected channel */
 
-	uint8 balance;              /**< balance (all channels 4+4b R,L) */
-	uint8 noise;                /**< white noise control and frequency */
-	uint8 lfo_freq;             /**< LFO (low-frequency oscillator) frequency */
-	uint8 lfo_ctrl;             /**< LFO (low-frequency oscillator) control */
+	uint8 balance;                  /**< balance (all channels 4+4b R,L) */
+	uint8 noise;                    /**< white noise control and frequency */
+	uint8 lfo_freq;                 /**< LFO (low-frequency oscillator) frequency */
+	uint8 lfo_ctrl;                 /**< LFO (low-frequency oscillator) control */
 
 	struct {
-		int counter;            /**< waveform index counter */
+		int counter;                /**< waveform index counter */
 
-		uint8 wav_index;        /**< wav data index */
-		uint8 wav[32];          /**< wav data */
-		uint16 freq;            /**< frequency */
-		uint8 ctrl;             /**< control (enable, DDA, volume) */
-		uint8 balance;          /**< balance 4+4b L+R */
+		uint8 wav_index;            /**< wav data index */
+		uint8 wav[32];              /**< wav data */
+		uint16 freq;                /**< frequency */
+		uint8 ctrl;                 /**< control (enable, DDA, volume) */
+		uint8 balance;              /**< balance 4+4b L+R */
 
-	} ch[8];                    /**< channel struct */
+	} ch[8];                        /**< channel struct */
 
 } t_pce_psg;
 
@@ -45,7 +45,7 @@ typedef struct
  * Constants                                                                  *
  * -------------------------------------------------------------------------- */
 
-/**
+/*
  * Current channel shortcut.
  */
 #define PSG_CH       pce_psg->ch[pce_psg->sel_ch]

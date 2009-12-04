@@ -9,6 +9,7 @@
 /* vce_huc6260.c: NEC PCEngine HuC6260 VCE emulator */
 
 #include "bc_emu.h"
+#include "emu/pce/pce_main.h"
 #include "emu/pce/cpu_huc6280.h"
 #include "emu/pce/vce_huc6260.h"
 #include "emu/pce/vdc_huc6270.h"
@@ -27,9 +28,40 @@ t_pce_vce* pce_vce = NULL;
  */
 int pce_vce_init()
 {
+	int i, j, x;
 	debug("VCE init");
 
 	pce_vce = xmalloc(sizeof(t_pce_vce));
+
+	/* prepare lookup tables for bitplanes and pixel lookups */
+
+	/* build bitplane to pixel lookup table */
+	for(i = 0; i < 0x100; i++)
+		for(j = 0; j < 0x100; j++)
+		{
+			uint32 val = 0;
+			for(x = 0; x < 8; x++)
+			{
+				val |= (j & (0x80 >> x)) ?
+					(uint32)(8 << (x << 2)) : 0;
+				val |= (i & (0x80 >> x)) ?
+					(uint32)(8 << (x << 2)) : 0;
+			}
+#ifdef LSB
+			pce_vce->bp_lut[(j << 8) | i] = val;
+#else
+			pce_vce->bp_lut[(i << 8) | j] = val;
+#endif /* LSB */
+		}
+
+	/* build VCE to pixel lookup table */
+	for(i = 0; i < 0x200; i++)
+	{
+		int r = (i >> 3) & 7;
+		int g = (i >> 6) & 7;
+		int b = (i >> 0) & 7;
+		pce_vce->pixel_lut[i] = (r << 13 | g << 8 | b << 2) & 0xE71C;
+	}
 
 	return 1;
 }
@@ -68,6 +100,8 @@ uint8 pce_vce_r(int addr)
 	/* check and store address MSB */
 	int msb = (addr & 1);
 
+	//debug("VCE read: addr=%08x msb=%d", addr, msb);
+
 	if((addr & ~1) == 0x0404)
 	{
 		uint8 temp = pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)];
@@ -90,6 +124,8 @@ void pce_vce_w(int addr, int data)
 	/* check and store address MSB */
 	int msb = (addr & 1);
 
+	//debug("VCE write: addr=%08x msb=%d data=%d", addr, msb, data);
+
 	switch(addr & ~1)
 	{
 		/* control register
@@ -104,7 +140,7 @@ void pce_vce_w(int addr, int data)
 		/* address */
 		case 0x402:
 			if(!msb)
-				pce_vce->addr = (pce_vce->addr & 0x0100) | (data);
+				pce_vce->addr = (pce_vce->addr & 0x0100) | data;
 			else
 				pce_vce->addr = (pce_vce->addr & 0x00FF) | ((data & 1) << 8);
 			break;
@@ -120,10 +156,7 @@ void pce_vce_w(int addr, int data)
 #ifndef LSB
 					tmp = (tmp >> 8) | (tmp << 8);
 #endif
-					//FIXME
-					//pce_vdc->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vdc->pixel_lut[temp];
-					tmp = (tmp >> 1) & 0xFF;
-					//xlat[(vce.addr >> 8) & 1][(vce.addr & 0xFF)] = temp;
+					pce_vce->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vce->pixel_lut[tmp];
 				}
 
 				/* update overscan color */
@@ -134,14 +167,8 @@ void pce_vce_w(int addr, int data)
 #ifndef LSB
 					tmp = (tmp >> 8) | (tmp << 8);
 #endif
-					// FIXME
-					/*
 					for(n = 0; n < 0x10; n += 1)
-						pixel[0][(n << 4)] = pixel_lut[temp];
-					temp = (temp >> 1) & 0xFF;
-					for(n = 0; n < 0x10; n += 1)
-						xlat[0][(n << 4)] = temp;
-					*/
+						pce_vce->pixel[0][(n << 4)] = pce_vce->pixel_lut[tmp];
 				}
 			}
 

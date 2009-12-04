@@ -9,6 +9,7 @@
 /* rom.c: NEC PCEngine ROM parser */
 
 #include "bc_emu.h"
+#include "emu/pce/pce_main.h"
 #include "emu/pce/cpu_huc6280.h"
 #include "emu/pce/vce_huc6260.h"
 #include "emu/pce/vdc_huc6270.h"
@@ -73,8 +74,10 @@ int pce_rom_parse()
 
 	/* we don't need entire emu_rom anymore. Cleanup */
 	debug("ROM image was moved into PCE emulator. cleaning-up.");
+
 	xfree(emu_rom->data);
 	xfree(emu_rom);
+	emu_rom = NULL;
 
 	return 1;
 }

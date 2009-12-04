@@ -9,6 +9,7 @@
 /* cpu_huc6280.c: NEC PCEngine HuC6280 CPU emulator */
 
 #include "bc_emu.h"
+#include "emu/pce/pce_main.h"
 #include "emu/pce/cpu_huc6280.h"
 #include "emu/pce/vce_huc6260.h"
 #include "emu/pce/vdc_huc6270.h"
@@ -33,6 +34,7 @@ t_pce_cpu* pce_cpu = NULL;
 int pce_cpu_init()
 {
 	debug("CPU init");
+	assert(pce);
 
 	pce_cpu = xmalloc(sizeof(t_pce_cpu));
 	pce_cpu_reset();
@@ -71,6 +73,8 @@ void pce_cpu_reset()
 	/* set speed to 7.16MHz */
 	pce_cpu->speed = 1;
 
+	pce_cpu->cycle_count = 0;
+
 	/* set interrupt callback */
 	pce_cpu_set_irq_callback(&pce_cpu_irq_callback);
 }
@@ -92,7 +96,7 @@ void pce_cpu_shutdown()
  * -------------------------------------------------------------------------- */
 
 /**
- * Exec next n cycles (445 cycles makes one frame in NTSC in
+ * Exec next n cycles (455 cycles makes one frame in NTSC in
  * pce_cpu->speed == 1 mode).
  * \param cycles    instruction cycles avalaible to exec
  * \return          remaining cycles
@@ -101,7 +105,7 @@ int pce_cpu_exec(int cycles)
 {
 	int in, last, delta;
 
-	debug("CPU exec cycles=%d", cycles);
+	//debug("CPU exec cycles=%d", cycles);
 	assert(pce && pce_cpu);
 
 	/* store cycles count */
@@ -121,6 +125,18 @@ int pce_cpu_exec(int cycles)
 
 		/* read and execute opcode */
 		in = RDOP();
+
+		/* TODO this is the right place for debugger hook */
+		//debug("CPU cycle: %d", pce_cpu->cycle_count);
+		/*debug("CPU state: PC=%04x P=%04x S=%04x A=%04x X=%04x Y=%04x",
+			pce_cpu_reg_r(CPU_PC),
+			pce_cpu_reg_r(CPU_P),
+			pce_cpu_reg_r(CPU_S),
+			pce_cpu_reg_r(CPU_A),
+			pce_cpu_reg_r(CPU_X),
+			pce_cpu_reg_r(CPU_Y));*/
+		//debug("CPU opcode: %03x", in);
+
 		PCW++;
 		pce_cpu_op[in]();
 
@@ -130,22 +146,27 @@ int pce_cpu_exec(int cycles)
 			delta = last - pce_cpu->cycle_count;
 			pce_cpu->timer_value -= delta;
 
+			/* cause IRQ if needed */
 			if(pce_cpu->timer_value <= 0 && pce_cpu->timer_ack == 1)
 			{
-				pce_cpu->timer_ack=pce_cpu->timer_status=0;
+				pce_cpu->timer_status = 0;
+				pce_cpu->timer_ack = 0;
+
 				pce_cpu_set_irq_line(2,ASSERT_LINE);
 			}
 		}
 		last = pce_cpu->cycle_count;
 
-		if( pce_cpu->pc.d == pce_cpu->ppc.d )
+		if(pce_cpu->pc.d == pce_cpu->ppc.d)
 		{
-			if (pce_cpu->cycle_count > 0) pce_cpu->cycle_count=0;
+			if(pce_cpu->cycle_count > 0)
+				pce_cpu->cycle_count = 0;
 			pce_cpu->extra_cycles = 0;
+
 			return cycles;
 		}
 
-	} while (pce_cpu->cycle_count > 0);
+	} while(pce_cpu->cycle_count > 0);
 
 	/* cycles taken by irqs */
 	pce_cpu->cycle_count -= pce_cpu->extra_cycles;
@@ -333,7 +354,7 @@ static void pce_cpu_set_irq_callback(int (*callback)(int irqline))
  */
 static int pce_cpu_irq_callback(int irqline)
 {
-	debug("CPU irq callback: IRQ%d", irqline);
+	//debug("CPU irq callback: IRQ%d (line=%d)", irqline+1, irqline);
 	return 0;
 }
 
@@ -472,7 +493,6 @@ static uint8 pce_cpu_input_r()
 
 /**
  * Internal read I/O page (CPU peripherals) address decision logic.
- * FIXME
  * \param addr      page address
  * \return          page address content
  */
@@ -480,17 +500,19 @@ static int pce_cpu_iopage_r(int addr)
 {
 	assert(pce && pce_cpu);
 
+	//debug("CPU iopage/read: addr=%08x", addr);
+
 	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* 0x0000-0x0003 vdc */
+		case 0x0000: /* 0x0000-0x0003 VDC */
 			if(addr <= 0x0003)
-				return 0x00;//FIXME vdc_r(addr);
+				return pce_vdc_r(addr);
 			break;
-		case 0x0400: /* 0x0400-0x0405 vce */
+		case 0x0400: /* 0x0400-0x0405 VCE */
 			if(addr <= 0x0405)
-				return 0x00;//FIXME vce_r(addr);
+				return pce_vce_r(addr);
 			break;
-		case 0x0800: /* 0x0800-0x0809 psg */
+		case 0x0800: /* 0x0800-0x0809 PSG */
 			break;
 		case 0x0C00: /* 0x0C00-0x0C01 timer */
 			if(addr == 0x0C00 || addr == 0x0C01)
@@ -500,7 +522,7 @@ static int pce_cpu_iopage_r(int addr)
 			if(addr == 0x1000)
 				return pce_cpu_input_r();
 			break;
-		case 0x1400: /* 0x1402-0x1403 irq */
+		case 0x1400: /* 0x1402-0x1403 IRQ */
 			if(addr == 0x1402 || addr == 0x1403)
 				return pce_cpu_irq_r(addr & 1);
 			break;
@@ -513,7 +535,6 @@ static int pce_cpu_iopage_r(int addr)
 
 /**
  * Internal write I/O page (CPU peripherals) address decision logic.
- * FIXME
  * \param addr          page address
  * \param data          data to be written
  * \see pce_cpu_mem_w
@@ -522,23 +543,25 @@ static void pce_cpu_iopage_w(int addr, int data)
 {
 	assert(pce_cpu);
 
+	//debug("CPU iopage/write: addr=%08x data=%d", addr, data);
+
 	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* 0x0000-0x0003 vdc */
+		case 0x0000: /* 0x0000-0x0003 VDC */
 			if(addr <= 0x0003)
 			{
-				//FIXME vdc_w(addr, data);
+				pce_vdc_w(addr, data);
 				return;
 			}
 			break;
-		case 0x0400: /* 0x0400-0x0405 vce */
+		case 0x0400: /* 0x0400-0x0405 VCE */
 			if(addr <= 0x0405)
 			{
-				//FIXME vce_w(addr, data);
+				pce_vce_w(addr, data);
 				return;
 			}
 			break;
-		case 0x0800: /* 0x0800-0x0805 psg */
+		case 0x0800: /* 0x0800-0x0805 PSG */
 			if(addr <= 0x0809)
 			{
 				pce_psg_w(addr, data);
@@ -559,7 +582,7 @@ static void pce_cpu_iopage_w(int addr, int data)
 				return;
 			}
 			break;
-		case 0x1400: /* 0x1402-0x1403 irq */
+		case 0x1400: /* 0x1402-0x1403 IRQ */
 			if(addr == 0x1402 || addr == 0x1403)
 			{
 				pce_cpu_irq_w(addr & 1, data);
@@ -583,15 +606,17 @@ int pce_cpu_mem_r(int addr)
 
 	assert(pce && pce_cpu);
 
+	//debug("CPU mem/read: addr=%08x page=%08x", addr, page);
+
 	/* lower ROM */
 	if(addr <= 0x0FFFFF)
-		return pce->rom[(addr)];
+		return pce->rom[addr];
 
 	page = (addr >> 13) & 0xFF;
 
 	/* ROM */
 	if(page <= 0x7F)
-		return pce->rom[(addr)];
+		return pce->rom[addr];
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
@@ -601,7 +626,7 @@ int pce_cpu_mem_r(int addr)
 	if(page == 0xFF)
 		return pce_cpu_iopage_r(addr & 0x1FFF);
 
-	debug("CPU UNKNOWN read %02X:%04X (PC:%08X)", page, addr & 0x1FFFF,
+	debug("CPU UNKNOWN mem/read %02X:%04X (PC:%08X)", page, addr & 0x1FFFF,
 		pce_cpu_reg_r(CPU_PC));
 	return (0xFF);
 }
@@ -613,9 +638,11 @@ int pce_cpu_mem_r(int addr)
  */
 void pce_cpu_mem_w(int addr, int data)
 {
+	assert(pce && pce_cpu);
+
 	uint8 page = (addr >> 13) & 0xFF;
 
-	assert(pce && pce_cpu);
+	//debug("CPU mem/write: addr=%08x page=%08x data=%d", addr, page, data);
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
@@ -631,6 +658,6 @@ void pce_cpu_mem_w(int addr, int data)
 		return;
 	}
 
-	debug("CPU UNKNOWN write %02X: %02X:%04X (PC:%08X)", data, page,
+	debug("CPU UNKNOWN mem/write %02X: %02X:%04X (PC:%08X)", data, page,
 		addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 }

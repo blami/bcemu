@@ -108,7 +108,7 @@ OPTION(EMU_PCE          "Enable NEC PCEngine emulator"          ON)
 IF(EMU_PCE)
 	SET(EMU "pce ${EMU}")
 	ADD_LIBRARY(emu_pce STATIC
-		emu/pce/pce.c
+		emu/pce/pce_main.c
 		emu/pce/cpu_huc6280.c
 		emu/pce/vce_huc6260.c
 		emu/pce/vdc_huc6270.c
@@ -127,7 +127,7 @@ IF(UI_SDL AND (ARCH STREQUAL "pc"))
 	SET(UI "sdl ${UI}")
 	FIND_PACKAGE(SDL REQUIRED)
 	ADD_LIBRARY(ui_sdl STATIC
-		ui/sdl/sdl.c
+		ui/sdl/sdl_main.c
 	)
 	SET(LIBS ${LIBS} ${SDL_LIBRARY} ui_sdl)
 ELSEIF(UI_SDL AND NOT (ARCH STREQUAL "pc"))

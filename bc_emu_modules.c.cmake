@@ -31,8 +31,10 @@
  * \code
  * {
  *     "id",        // emulator id
- *     init,        // emulators init() callback (pointer to function)
- *     shutdown     // emulators shutdown() callback
+ *     init,        // init() callback
+ *     reset,       // reset() callback
+ *     shutdown     // shutdown() callback
+ *     frame,       // frame() callback
  * };
  * \endcode
  */
@@ -43,7 +45,9 @@ t_emu emu_modules_emu[] =
 	{
 		"pce",
 		pce_init,
-		pce_shutdown
+		pce_reset,
+		pce_shutdown,
+		pce_frame
 	},
 #endif /* EMU_PCE */
 
@@ -56,11 +60,11 @@ t_emu emu_modules_emu[] =
  * \code
  * {
  *     "id",        // UI id
- *     init,        // init() callback (pointer to function)
+ *     init,        // init() callback
  *     shutdown     // shutdown() callback
- *     update_audio // update_audio() callback (takes param from emu)
- *     update_video // update_video() callback (takes param from emu)
- *     update_input // update_input() callback (returns input struct)
+ *     update_audio // update_audio() callback
+ *     update_video // update_video() callback
+ *     update_input // update_input() callback
  * };
  * \endcode
  */

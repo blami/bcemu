@@ -118,6 +118,11 @@ extern char*    emu_progname;
 extern t_emu    emu_modules_emu[];
 extern t_ui     emu_modules_ui[];
 
+/* FIXME remove these */
+extern t_video* emu_video;
+extern t_audio* emu_audio;
+extern t_input* emu_input;
+
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *
  * -------------------------------------------------------------------------- */

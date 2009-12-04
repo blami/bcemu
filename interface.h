@@ -24,7 +24,6 @@ typedef struct
 	uint8 *pixeldata;   /**< pixeldata */
 	int width;          /**< width */
 	int height;         /**< height */
-	int bpp;            /**< bits per pixel (color depth) */
 
 	/**
 	 * Viewport metadata.
@@ -37,9 +36,9 @@ typedef struct
 		int height;     /**< height of viewport */
 		int old_width;  /**< old width of viewport */
 		int old_height; /**< old height of viewport */
-		int changed;    /**< viewport width/height has been changed */
+		int ch;         /**< viewport width/height has been changed */
 
-	} viewport;
+	} vp;
 
 } t_video;
 

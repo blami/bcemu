@@ -8,11 +8,27 @@
 
 /* sdl.h: SDL user interface frontend header. */
 
-#ifndef __SDL_H
-#define __SDL_H
+#ifndef __SDL_MAIN_H
+#define __SDL_MAIN_H
 
 #include "SDL/SDL.h"
 
+
+/* -------------------------------------------------------------------------- *
+ * Data types                                                                 *
+ * -------------------------------------------------------------------------- */
+
+/**
+ * SDL user interface context.
+ */
+typedef struct
+{
+	SDL_Surface* screen;        /* surface tied with screen (back buffer) */
+	SDL_Surface* buffer;        /* drawing buffer */
+
+	SDL_Event event;            /* input event */
+
+} t_sdl;
 
 /* -------------------------------------------------------------------------- *
  * Function prototypes                                                        *

@@ -287,9 +287,8 @@ void pce_vdc_w(int offset, int data)
 					if(pce_vdc->disp_width != pce_vdc->disp_width_old)
 					{
 						debug("VDC viewport changed: w=%dpx", pce_vdc->disp_width);
-						// FIXME
 						//bitmap.viewport.ow = bitmap.viewport.w;
-						//bitmap.viewport.w = old_width = disp_width;
+						emu_video->vp.width = pce_vdc->disp_width;
 						//bitmap.viewport.changed = 1;
 					}
 					break;
@@ -303,7 +302,7 @@ void pce_vdc_w(int offset, int data)
 						debug("VDC viewport changed: h=%dpx", pce_vdc->disp_height);
 						// FIXME
 						//bitmap.viewport.oh = bitmap.viewport.h;
-						//bitmap.viewport.h = old_height = disp_height;
+						emu_video->vp.height = pce_vdc->disp_height;
 						//bitmap.viewport.changed = 1;
 					}
 					break;

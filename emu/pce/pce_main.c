@@ -86,7 +86,7 @@ void pce_frame()
 {
 	int line;
 
-	//debug("PCE frame");
+	debug("PCE frame");
 	assert(pce && pce_cpu && pce_vce && pce_vdc && pce_psg);
 
 	/* render 262 lines per frame (NTSC) */
@@ -103,6 +103,8 @@ void pce_frame()
 		/* vertical blanking */
 		if(line == 240)
 		{
+			debug("PCE vertical blank");
+
 			/* DVSRR or DCR is set, DMA write */
 			if(pce_vdc->dvssr || pce_vdc->reg[0x0F] & 0x10)
 			{

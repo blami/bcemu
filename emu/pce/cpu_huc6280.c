@@ -354,7 +354,7 @@ static void pce_cpu_set_irq_callback(int (*callback)(int irqline))
  */
 static int pce_cpu_irq_callback(int irqline)
 {
-	//debug("CPU irq callback: IRQ%d (line=%d)", irqline+1, irqline);
+	debug("CPU irq callback: IRQ%d (line=%d)", irqline+1, irqline);
 	return 0;
 }
 

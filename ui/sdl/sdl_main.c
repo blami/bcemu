@@ -107,7 +107,7 @@ void sdl_update_video()
 	/* fill entire screen with black color if viewport was changed */
 	if(emu_video->vp.ch)
 		SDL_FillRect(sdl->screen, &sdl->screen->clip_rect,
-			SDL_MapRGB(sdl->screen->format, 0x0, 0x0, 0x0));
+			SDL_MapRGB(sdl->screen->format, 0x00, 0x00, 0x00));
 	/* draw current viewport */
 	SDL_BlitSurface(sdl->buffer, &vp_rect, sdl->screen, &sdl->screen->clip_rect);
 
@@ -147,12 +147,47 @@ void sdl_update_input()
 				debug("SDL exit triggered");
 				emu_input->quit = 1;
 				break;
-			}
 			/* R: reset */
 			case SDLK_r:
 				debug("SDL reset triggered");
 				emu_input->reset = 1;
 				break;
+			/* UP: up button */
+			case SDLK_UP:
+				debug("SDL emu button:up");
+				emu_input->button[0][INPUT_UP] = 1;
+				break;
+			/* DOWN: down button */
+			case SDLK_DOWN:
+				debug("SDL emu button:down");
+				emu_input->button[0][INPUT_DOWN] = 1;
+				break;
+			/* LEFT: left button */
+			case SDLK_LEFT:
+				debug("SDL emu button:left");
+				emu_input->button[0][INPUT_LEFT] = 1;
+				break;
+			/* RIGHT: right button */
+			case SDLK_RIGHT:
+				debug("SDL emu button:right");
+				emu_input->button[0][INPUT_RIGHT] = 1;
+				break;
+			/* A: button 1 */
+			case SDLK_a:
+				debug("SDL emu button:1");
+				emu_input->button[0][INPUT_BUTTON1] = 1;
+				break;
+			/* S: button 2 */
+			case SDLK_s:
+				debug("SDL emu button:2");
+				emu_input->button[0][INPUT_BUTTON2] = 1;
+				break;
+			/* RETURN: start button */
+			case SDLK_RETURN:
+				debug("SDL emu button:start");
+				emu_input->button[0][INPUT_START] = 1;
+				break;
+			}
 			break;
 		}
 	}

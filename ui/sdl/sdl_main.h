@@ -26,6 +26,8 @@ typedef struct
 	SDL_Surface* screen;        /* surface tied with screen (back buffer) */
 	SDL_Surface* buffer;        /* drawing buffer */
 
+	
+
 	SDL_Event event;            /* input event */
 
 } t_sdl;

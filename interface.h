@@ -34,8 +34,6 @@ typedef struct
 		int y;          /**< Y position of viewport */
 		int width;      /**< width of viewport */
 		int height;     /**< height of viewport */
-		int old_width;  /**< old width of viewport */
-		int old_height; /**< old height of viewport */
 		int ch;         /**< viewport width/height has been changed */
 
 	} vp;
@@ -61,10 +59,30 @@ typedef struct
 	int quit;           /**< UI quit signal */
 	int reset;          /**< UI reset signal */
 
+	/* FIXME this is lame temporary solution. In reality there will be plenty
+	 * emulators each with specific number of input device of various type
+	 * and craziness. Emulator should specify its need of input device binding
+	 * to some kind of cfg struct inside t_input and UI should configure itself
+	 * to follow this cfg struct exporting right values which can be read
+	 * directly by the emulator (hashtable?) */
+	int button[2][255]; /**< input device buttons use constants */
+
 } t_input;
 
 /* -------------------------------------------------------------------------- *
  * Constants                                                                  *
  * -------------------------------------------------------------------------- */
+
+#define INPUT_UP        0
+#define INPUT_DOWN      1
+#define INPUT_LEFT      2
+#define INPUT_RIGHT     3
+/* ... */
+#define INPUT_START     8
+#define INPUT_SELECT    10
+/* ... */
+#define INPUT_BUTTON1   64
+#define INPUT_BUTTON2   65
+/* ... */
 
 #endif /* __INTERFACE_H */

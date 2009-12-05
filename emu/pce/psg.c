@@ -77,65 +77,47 @@ void pce_psg_w(uint16 addr, uint8 data)
 
 	switch(addr)
 	{
-		/* channel select */
-		case 0x0800:
-			pce_psg->sel_ch = (data & 7);
-			break;
+	/* global */
+	case 0x0800: /* channel select */
+		pce_psg->sel_ch = (data & 7);
+		break;
+	case 0x0801: /* sound balance (global) */
+		pce_psg->balance = data;
+		break;
+	case 0x0807: /* white noise */
+		pce_psg->noise = data;
+		break;
+	case 0x0808: /* LFO (low frequency oscilator) frequency */
+		pce_psg->lfo_freq = data;
+		break;
+	case 0x0809: /* LFO (low frequency oscilator) control */
+		pce_psg->lfo_ctrl = data;
+		break;
 
-		/* sound balance (all channels) */
-		case 0x0801:
-			pce_psg->balance = data;
-			break;
+	/* channel specific */
+	case 0x0802: /* frequency LSB */
+		PSG_CH.freq = (PSG_CH.freq & 0x0F00) | (data);
+		break;
+	case 0x0803: /* frequency MSB */
+		PSG_CH.freq = (PSG_CH.freq & 0x00FF) | ((data & 0x0F) << 8);
+		break;
+	case 0x0804: /* channel control (frequency, dda, volume) */
+		PSG_CH.ctrl = data;
+		/* if needed set wave index to 0 */
+		if((data & 0xC0) == 0x40)
+			PSG_CH.wav_index = 0;
+		break;
+	case 0x0805: /* channel balance */
+		PSG_CH.balance = data;
+		break;
+	case 0x0806: /* channel waveform data */
+		PSG_CH.wav[PSG_CH.wav_index] = data;
+		/* increase waveform data index */
+		PSG_CH.wav_index = ((PSG_CH.wav_index + 1) & 0x1F);
+		break;
 
-		/* white noise */
-		case 0x0807:
-			pce_psg->noise = data;
-			break;
-
-		/* LFO (low frequency oscilator) frequency */
-		case 0x0808:
-			pce_psg->lfo_freq = data;
-			break;
-
-		/* LFO (low frequency oscilator) control */
-		case 0x0809:
-			pce_psg->lfo_ctrl = data;
-			break;
-
-		/*
-		 * Current channel specific:
-		 */
-
-		/* channel frequency (LSB, MSB) */
-		case 0x0802:
-			PSG_CH.freq = (PSG_CH.freq & 0x0F00) | (data);
-			break;
-		case 0x0803:
-			PSG_CH.freq = (PSG_CH.freq & 0x00FF) | ((data & 0x0F) << 8);
-			break;
-
-		/* channel ctrl (enable, DDA, volume) */
-		case 0x0804:
-			PSG_CH.ctrl = data;
-			/* if needed set wave index to 0 */
-			if((data & 0xC0) == 0x40)
-				PSG_CH.wav_index = 0;
-			break;
-
-		/* channel balance */
-		case 0x0805:
-			PSG_CH.balance = data;
-			break;
-
-		/* channel waveform data */
-		case 0x0806:
-			PSG_CH.wav[PSG_CH.wav_index] = data;
-			/* increase waveform data index */
-			PSG_CH.wav_index = ((PSG_CH.wav_index + 1) & 0x1F);
-			break;
-
-		default:
-			debug("PSG UNKNOWN write at %x", addr);
+	default:
+		debug("PSG UNKNOWN write at %x", addr);
 	}
 }
 
@@ -145,7 +127,7 @@ void pce_psg_w(uint16 addr, uint8 data)
  * \param buf_r         right channel output buffer
  * \param length        length of requested data in samples
  */
-void pce_psg_output(int16 *buf_l, int16 *buf_r, int length)
+void pce_psg_fillbuf(int16 *buf_l, int16 *buf_r, int length)
 {
 	assert(pce_psg);
 

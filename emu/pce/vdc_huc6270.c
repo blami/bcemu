@@ -62,7 +62,6 @@ void pce_vdc_reset()
 
 	pce_vdc->y_offset = 0;
 	pce_vdc->byr = 0;
-	pce_vdc->planes = -1; /* enable both planes */
 
 	/* reset background pattern cache */
 	memset(pce_vdc->bp_cache, 0, sizeof(pce_vdc->bp_cache));
@@ -116,35 +115,39 @@ void pce_vdc_shutdown()
  * -------------------------------------------------------------------------- */
 
 /**
- * Macro to inline code for marking dirty place in background tile cache
- * during writes/DMA.
+ * Mark dirty place in background tile cache during writes/DMA.
  * \param addr          dirty address
+ * \see pce_vdc_w()
+ * \see pce_vdc_dma()
  */
-#define bp_dirty(addr)                                          \
-{                                                               \
-	int pat_addr = (addr >> 4) & 0x7FF; /* BAT lower 12b */     \
-	if(pce_vdc->bp_dirty[pat_addr] == 0)                        \
-	{                                                           \
-		pce_vdc->bp_list[pce_vdc->bp_list_i] = pat_addr;        \
-		pce_vdc->bp_list_i += 1;                                \
-	}                                                           \
-	pce_vdc->bp_dirty[pat_addr] |= (1 << (addr & 0x07));        \
+static inline void pce_vdc_dirty_bp(int addr)
+{
+	int pat_addr = (addr >> 4) & 0x7FF; /* BAT lower 12b */
+
+	if(pce_vdc->bp_dirty[pat_addr] == 0)
+	{
+		pce_vdc->bp_list[pce_vdc->bp_list_i] = pat_addr;
+		pce_vdc->bp_list_i += 1;
+	}
+	pce_vdc->bp_dirty[pat_addr] |= (1 << (addr & 0x07));
 }
 
 /**
- * Macro to inline code for marking dirty place in sprite character cache during
- * writes/DMA.
+ * Marking dirty place in sprite character cache during writes/DMA.
  * \param addr          dirty address
+ * \see pce_vdc_w()
+ * \see pce_vdc_dma()
  */
-#define sp_dirty(addr)                                          \
-{                                                               \
-	int pat_addr = (addr >> 6) & 0x1FF; /* SATB offset 2 */     \
-	if(pce_vdc->sp_dirty[pat_addr] == 0)                        \
-	{                                                           \
-		pce_vdc->sp_list[pce_vdc->sp_list_i] = pat_addr;        \
-		pce_vdc->sp_list_i += 1;                                \
-	}                                                           \
-	pce_vdc->sp_dirty[pat_addr] |= (1 << (addr & 0x0F));        \
+static inline void pce_vdc_dirty_sp(int addr)
+{
+	int pat_addr = (addr >> 6) & 0x1FF; /* SATB offset 2 */
+
+	if(pce_vdc->sp_dirty[pat_addr] == 0)
+	{
+		pce_vdc->sp_list[pce_vdc->sp_list_i] = pat_addr;
+		pce_vdc->sp_list_i += 1;
+	}
+	pce_vdc->sp_dirty[pat_addr] |= (1 << (addr & 0x0F));
 }
 
 /**
@@ -166,36 +169,34 @@ int pce_vdc_r(int offset)
 
 	switch(offset)
 	{
-		/* read status/latch (IRQ clear) */
-		case 0x0000:
-			/* store return status */
-			tmp = pce_vdc->status;
+	case 0x0000: /* status/latch (IRQ clear) */
+		/* store return status */
+		tmp = pce_vdc->status;
 
-			/* reset status after read and clear IRQ line */
-			pce_vdc->status = 0;
-			pce_cpu_set_irq_line(0, CLEAR_LINE);
+		/* reset status after read and clear IRQ line */
+		pce_vdc->status = 0;
+		pce_cpu_set_irq_line(0, CLEAR_LINE);
+		return tmp;
+	case 0x0002: /* data */
+	case 0x0003:
+		if(pce_vdc->latch == 0x02)
+		{
+			/* fetch address */
+			uint16 addr = pce_vdc->reg[1] << 1;
+			/* read address */
+			tmp = (pce->vram[(addr | msb) & 0xFFFF]);
 
-			return tmp;
-
-		/* read data */
-		case 0x0002:
-		case 0x0003:
-			if(pce_vdc->latch == 0x02)
-			{
-				/* fetch address */
-				uint16 addr = pce_vdc->reg[1] << 1;
-
-				/* read address */
-				tmp = (pce->vram[(addr | msb) & 0xFFFF]);
-
-				/* increase address if MSB */
-				if(msb)
-					pce_vdc->reg[1] += pce_vdc->addr_inc;
-
+			/* increase address if MSB */
+			if(msb)
+				pce_vdc->reg[1] += pce_vdc->addr_inc;
 				return tmp;
-			}
-			break;
+		}
+		break;
 	}
+
+	/* this signals ??invalid?? latch. Seen ROMs crashing here, seen ROMs
+	 * recovered from this injury */
+	debug("VDC SUSPICIOUS read offset=%08x (returning 0xFF to stay clear)");
 
 	return 0xFF;
 }
@@ -216,108 +217,97 @@ void pce_vdc_w(int offset, int data)
 
 	switch(offset)
 	{
-		/* write status/latch */
-		case 0x0000:
-			pce_vdc->latch = (data & 0x1F);
-			break;
+	case 0x0000: /* status/latch */
+		pce_vdc->latch = (data & 0x1F);
+		break;
+	case 0x0002: /* data */
+	case 0x0003:
+		//debug("VDC write: latch=%02x", pce_vdc->latch);
+		if(msb)
+			pce_vdc->reg[pce_vdc->latch] =
+				(pce_vdc->reg[pce_vdc->latch] & 0x00FF) | (data << 8);
+		else
+			pce_vdc->reg[pce_vdc->latch] =
+				(pce_vdc->reg[pce_vdc->latch] & 0xFF00) | data;
 
-		/* write data */
-		case 0x0002:
-		case 0x0003:
-			//debug("VDC write: latch=%02x", pce_vdc->latch);
-			if(msb)
-				pce_vdc->reg[pce_vdc->latch] =
-					(pce_vdc->reg[pce_vdc->latch] & 0x00FF) | (data << 8);
-			else
-				pce_vdc->reg[pce_vdc->latch] =
-					(pce_vdc->reg[pce_vdc->latch] & 0xFF00) | data;
-
-			switch(pce_vdc->latch)
-			{
-				/* VWR: write VRAM at address specified in MAWR */
-				case 0x02:
-					if(msb)
+		switch(pce_vdc->latch)
+		{
+			case 0x02: /* VWR: write VRAM at address specified in MAWR */
+				if(msb)
+				{
+					uint16 vram_data = (data << 8 | pce_vdc->vram_latch);
+					if(vram_data != pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)])
 					{
-						uint16 vram_data = (data << 8 | pce_vdc->vram_latch);
-						if(vram_data != pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)])
-						{
-							pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)] = vram_data;
+						pce_vdc->vram_write[(pce_vdc->reg[0] & 0x7FFF)] = vram_data;
 
-							/* mark cache dirty */
-							bp_dirty(pce_vdc->reg[0]);
-							sp_dirty(pce_vdc->reg[0]);
-						}
-
-						/* autoincrement MAWR */
-						pce_vdc->reg[0] += pce_vdc->addr_inc;
+						/* mark cache dirty */
+						pce_vdc_dirty_bp(pce_vdc->reg[0]);
+						pce_vdc_dirty_sp(pce_vdc->reg[0]);
 					}
-					else
-						pce_vdc->vram_latch = data;
-					break;
 
-				/* CR: IW address autoincrement value (1, 32, 64, 128) */
-				case 0x05:
-					if(msb)
-					{
-						static uint8 iw_tbl[] = {1, 32, 64, 128};
-						pce_vdc->addr_inc = iw_tbl[(data >> 3) & 3];
-					}
-					break;
+					/* autoincrement MAWR */
+					pce_vdc->reg[0] += pce_vdc->addr_inc;
+				}
+				else
+					pce_vdc->vram_latch = data;
+				break;
+			case 0x05: /* CR: IW address autoincrement value (1, 32, 64, 128) */
+				if(msb)
+				{
+					static uint8 iw_tbl[] = {1, 32, 64, 128};
+					pce_vdc->addr_inc = iw_tbl[(data >> 3) & 3];
+				}
+				break;
+			case 0x08: /* BYR: viewport Y-offset from the origin */
+				pce_vdc->byr = (pce_vdc->reg[0x08] & 0x1FF);
 
-				/* BYR: viewport Y-offset from the background map origin */
-				case 0x08:
-					pce_vdc->y_offset = pce_vdc->byr = (pce_vdc->reg[0x08] & 0x1FF);
-					pce_vdc->y_offset &= pce_vdc->buf_col_mask;
-					break;
+				/* y_offset is artificial variable pre-calculated using byr
+				 * value and buf_col_mask */
+				pce_vdc->y_offset = (pce_vdc->reg[0x08] & 0x1FF);
+				pce_vdc->y_offset &= pce_vdc->buf_col_mask;
+				break;
+			case 0x09: /* MWR: configures virtual background size */
+				if(!msb)
+				{
+					pce_vdc->buf_shift =
+						pce_vdc->buf_shift_table[(data >> 4) & 3];
+					pce_vdc->buf_row_mask =
+						pce_vdc->buf_row_mask_table[(data >> 4) & 3];
+					pce_vdc->buf_col_mask =
+						((data >> 6) & 1) ? 0x01FF : 0x00FF;
+				}
+				break;
+			case 0x0B: /* HDR: controls horizontal display width + end
+			              position */
+				pce_vdc->disp_width = (1 + (pce_vdc->reg[0x0B] & 0x3F)) << 3;
 
-				/* MWR: configures virtual background size */
-				case 0x09:
-					if(!msb)
-					{
-						pce_vdc->buf_shift = pce_vdc->buf_shift_table[(data >> 4) & 3];
-						pce_vdc->buf_row_mask = pce_vdc->buf_row_mask_table[(data >> 4) & 3];
-						pce_vdc->buf_col_mask = ((data >> 6) & 1) ? 0x01FF : 0x00FF;
-					}
-					break;
+				/* update video interface */
+				if(pce_vdc->disp_width != pce_vdc->disp_width_old)
+				{
+					debug("VDC viewport changed: w=%dpx", pce_vdc->disp_width);
+					emu_video->vp.width = pce_vdc->disp_width;
+					emu_video->vp.ch = 1;
+				}
+				break;
+			case 0x0D: /* VDW: controls vertical display width (NOT end
+			              position) */
+				pce_vdc->disp_height = 1 + (pce_vdc->reg[0x0D] & 0x01FF);
 
-				/* HDR: controls horizontal display width + end position */
-				case 0x0B:
-					pce_vdc->disp_width = (1 + (pce_vdc->reg[0x0B] & 0x3F)) << 3;
-
-					if(pce_vdc->disp_width != pce_vdc->disp_width_old)
-					{
-						debug("VDC viewport changed: w=%dpx", pce_vdc->disp_width);
-						//bitmap.viewport.ow = bitmap.viewport.w;
-						emu_video->vp.width = pce_vdc->disp_width;
-						//bitmap.viewport.changed = 1;
-					}
-					break;
-
-				/* VDW: controls vertical display width (NOT end position) */
-				case 0x0D:
-					pce_vdc->disp_height = 1 + (pce_vdc->reg[0x0D] & 0x01FF);
-
-					if(pce_vdc->disp_height != pce_vdc->disp_height_old)
-					{
-						debug("VDC viewport changed: h=%dpx", pce_vdc->disp_height);
-						// FIXME
-						//bitmap.viewport.oh = bitmap.viewport.h;
-						emu_video->vp.height = pce_vdc->disp_height;
-						//bitmap.viewport.changed = 1;
-					}
-					break;
-
-				/* LENR: DMA block length */
-				case 0x12:
-					if(msb)
-						pce_vdc_dma();
-					break;
-
-				/* SATB: points to SATB, we need to trigger VRAM to SATB DMA */
-				case 0x13:
-					if(msb)
-						pce_vdc->dvssr = 1;
-					break;
+				if(pce_vdc->disp_height != pce_vdc->disp_height_old)
+				{
+					debug("VDC viewport changed: h=%dpx", pce_vdc->disp_height);
+					emu_video->vp.height = pce_vdc->disp_height;
+					emu_video->vp.ch = 1;
+				}
+				break;
+			case 0x12: /* LENR: DMA block length */
+				if(msb)
+					pce_vdc_dma();
+				break;
+			case 0x13: /* SATB: points to SATB, triggers VRAM to SATB DMA */
+				if(msb)
+					pce_vdc->dvssr = 1;
+				break;
 			}
 	}
 }
@@ -355,8 +345,8 @@ void pce_vdc_dma()
 		if(tmp != pce_vdc->vram_write[(desr & 0x7FFF)])
 		{
 			pce_vdc->vram_write[(desr & 0x7FFF)] = tmp;
-			bp_dirty(desr);
-			sp_dirty(desr);
+			pce_vdc_dirty_bp(desr);
+			pce_vdc_dirty_sp(desr);
 		}
 		sour = (sour_inc) ? (sour - 1) : (sour + 1);
 		desr = (desr_inc) ? (desr - 1) : (desr + 1);
@@ -372,14 +362,14 @@ void pce_vdc_dma()
 }
 
 /* -------------------------------------------------------------------------- *
- * VDC bitmap rendering                                                       *
+ * VDC sprite list                                                            *
  * -------------------------------------------------------------------------- */
 
 /**
  * Pre-calculate sprite list of sprites used in frame.
  * \return              sprite list index
  */
-int pce_vdc_sprite_update()
+int pce_vdc_sprite_list_build()
 {
 	assert(pce && pce_vdc);
 
@@ -502,6 +492,10 @@ int pce_vdc_sprite_update()
 	return pce_vdc->sprite_list_i;
 }
 
+/* -------------------------------------------------------------------------- *
+ * VDC caches                                                                 *
+ * -------------------------------------------------------------------------- */
+
 /**
  * Update background tile cache.
  */
@@ -516,6 +510,7 @@ static void pce_vdc_cache_bp()
 
 	assert(pce_vce);
 
+	/* check if cache is dirty */
 	if(!pce_vdc->bp_list_i)
 		return;
 
@@ -547,6 +542,7 @@ static void pce_vdc_cache_bp()
 		pce_vdc->bp_dirty[pat_addr] = 0;
 	}
 
+	/* mark cache up to date */
 	pce_vdc->bp_list_i = 0;
 }
 
@@ -561,6 +557,7 @@ static void pce_vdc_cache_sp()
 	uint8 i0, i1, i2, i3;
 	uint16 b0, b1, b2, b3;
 
+	/* check if cache is dirty */
 	if(!pce_vdc->sp_list_i)
 		return;
 
@@ -605,52 +602,71 @@ static void pce_vdc_cache_sp()
 		pce_vdc->sp_dirty[pat_addr] = 0;
 	}
 
+	/* mark cache as up to date */
 	pce_vdc->sp_list_i = 0;
 }
 
+/* -------------------------------------------------------------------------- *
+ * VDC rendering                                                              *
+ * -------------------------------------------------------------------------- */
+
 /**
- * Render background tile pattern in line.
+ * Rendering helper to render background tile pattern part of specified frame
+ * line. Uses VCE to do pixel data lookups.
+ * \param line          rendered line number
+ * \see pce_vdc_render()
+ * \see pce_vce_init()
  */
-static void pce_vdc_render_bp(int line, t_video* video)
+static void pce_vdc_render_bp(int line)
 {
-	uint16 *nt;
-	uint8 *src, palette;
-	uint16 *dst;
-	int column, pat_addr, attr, x, shift, v_line, nt_scroll;
+	uint16 *bp;
+	uint8 palette;
+	int column;
+	int pat_addr;
+	int attr;
+	int x;
+	int shift;
+	int v_line;
+	int bp_scroll;
 	int xscroll = (pce_vdc->reg[7] & 0x03FF);
-	int end = pce_vdc->disp_width >> 3;
+	int end_column = pce_vdc->disp_width >> 3;
+	/* source and destination pointers */
+	uint8 *src;
+	uint16 *dst;
 
+	/* display properties */
 	int bpp = 16;
+	int Bpp = bpp >> 3;                     /* depth in bytes */
+	int Bwidth = emu_video->width * Bpp;    /* width in bytes (pitch) */
 
-	int Bpp = bpp >> 3;                 /* depth in bytes */
-	int Bwidth = video->width * Bpp;    /* width in bytes (pitch) */
+	assert(pce_vdc && pce_vce);
 
-	/* offset in pattern, in lines */
+	/* offset in buffer, in lines */
 	v_line = (pce_vdc->y_offset & 7);
 
-	/* offset in name table, in columns */
-	nt_scroll = (xscroll >> 3);
+	/* offset in pattern table, in columns */
+	bp_scroll = (xscroll >> 3);
 
 	/* offset in column, in pixels */
 	shift = (xscroll & 7);
 
 	/* draw an extra tile for the last column */
 	if(shift)
-		end++;
+		end_column++;
 
-	/* point to current offset within name table */
-	nt = (uint16 *)&pce->vram[
+	/* point to current offset within background tile pattern table */
+	bp = (uint16 *)&pce->vram[
 		(pce_vdc->y_offset >> 3) << pce_vdc->buf_shift];
 
 	/* point to start in line buffer */
-	dst = (uint16 *)&video->pixeldata[
+	dst = (uint16 *)&emu_video->pixeldata[
 		(line * Bwidth) + ((0x20 + (0 - shift)) << 1)];
 
 	/* draw columns */
-	for(column = 0; column < end; column++)
+	for(column = 0; column < end_column; column++)
 	{
-		/* get attribute */
-		attr = nt[(column + nt_scroll) & pce_vdc->buf_row_mask];
+		/* fetch attributes */
+		attr = bp[(column + bp_scroll) & pce_vdc->buf_row_mask];
 
 		/* extract name and palette bits */
 		pat_addr = (attr & 0x07FF);
@@ -669,61 +685,78 @@ static void pce_vdc_render_bp(int line, t_video* video)
 }
 
 /**
- * Render sprite pattern in specific line.
+ * Rendering helper to render sprite character pattern part of specified line.
+ * Uses VCE to do pixel data lookups.
+ * \param line          rendered line number
+ * \see pce_vdc_render()
+ * \see pce_vce_init()
  */
-static void pce_vdc_render_sp(int line, t_video* video)
+static void pce_vdc_render_sp(int line)
 {
-	t_pce_vdc_sprite* sp;
+	t_pce_vdc_sprite* sp;       /* SATB entry struct */
 	int i, j;
 	int x;
 	int c;
 	int pat_addr, pat_addr_mask;
 	int v_line;
+	int sp_line;
+	/* source and destination pointers */
 	uint8 *src;
-	int nt_line;
 	uint16 *dst;
 
+	/* display properties */
 	int bpp = 16;
+	int Bpp = bpp >> 3;                     /* depth in bytes */
+	int Bwidth = emu_video->width * Bpp;    /* width in bytes (pitch) */
 
-	int Bpp = bpp >> 3;                 /* depth in bytes */
-	int Bwidth = video->width * Bpp;    /* width in bytes (pitch) */
-
-	for(j = (pce_vdc->sprite_list_i - 1); j >= 0; j -= 1)
+	for(j = (pce_vdc->sprite_list_i - 1); j >= 0; j--)
 	{
-		/* fetch sprite pattern */
+		/* fetch sprite character pattern from SATB */
 		i = pce_vdc->sprite_list[j];
 		sp = &pce_vdc->sprite[i];
 
 		if((line >= sp->top) && (line < sp->bottom))
 		{
+			/* offset in buffer, in lines */
 			v_line = (line - sp->top) & sp->height;
-			nt_line = v_line;
 
+			/* offset in sprite table, in lines */
+			sp_line = v_line;
+
+			/* sprite mirror flip (sp_line from sprite bottom) */
 			if(sp->attr & SP_YFLIP)
-				nt_line = (sp->height - nt_line);
+				sp_line = (sp->height - sp_line);
 
-			pat_addr_mask = ((nt_line >> 4) & 3) << 1;
+			/* count pattern address and modify offset (v_line) */
+			pat_addr_mask = ((sp_line >> 4) & 3) << 1;
 			pat_addr = (sp->pat_addr_l | pat_addr_mask);
 			v_line &= 0x0F;
 
+			/* point to current pattern line */
 			src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0F) << 4)];
-			dst = (uint16 *)&video->pixeldata[(line * Bwidth)
+
+			/* point to start + sprite xpos in line buffer */
+			dst = (uint16 *)&emu_video->pixeldata[(line * Bwidth)
 				+ (((0x20 + sp->xpos) & 0x1FF) * (Bpp))];
 
-			for(x = 0; x < 0x10; x += 1)
+			/* draw sprite character pattern line (basic 16px) */
+			for(x = 0; x < 16; x++)
 			{
 				c = src[x];
 				if(c)
 					dst[x] = pce_vce->pixel[1][(c | sp->palette)];
 			}
 
+			/* sprite is double width (CGX), draw additional 16px containing
+			 * same data into planar memory */
 			if(sp->attr & SP_CGX)
 			{
 				pat_addr = (sp->pat_addr_r | pat_addr_mask);
 				src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0f) << 4)];
-				dst += 0x10;
+				dst += 16;
 
-				for(x = 0; x < 0x10; x += 1)
+				/* draw additional 16px */
+				for(x = 0; x < 16; x++)
 				{
 					c = src[x];
 					if(c)
@@ -734,22 +767,20 @@ static void pce_vdc_render_sp(int line, t_video* video)
 	}
 }
 
-
 /**
- * Render one line to bitmap.
+ * Render one line into screen buffer.
  * \param line          line to be rendered
- * \param video         video structure holding display data readable by UI
  */
-void pce_vdc_render_line(int line, t_video* video)
+void pce_vdc_render_line(int line)
 {
 	//debug("VDC render line=%d", line);
 
 	/* render background plane line (if enabled)
 	 * VDC CR (0x05) bit 7 = bg enable/disable */
-	if((pce_vdc->reg[0x05] & 0x80) && (pce_vdc->planes & 1))
+	if(pce_vdc->reg[0x05] & 0x80)
 	{
 		pce_vdc_cache_bp();
-		pce_vdc_render_bp(line, video);
+		pce_vdc_render_bp(line);
 	}
 	/* if disabled fill bg with black color */
 	else
@@ -758,10 +789,10 @@ void pce_vdc_render_line(int line, t_video* video)
 		int bpp = 16;
 
 		int Bpp = bpp >> 3;                 /* depth in bytes */
-		int Bwidth = video->width * Bpp;    /* width in bytes (pitch) */
+		int Bwidth = emu_video->width * Bpp;    /* width in bytes (pitch) */
 
 		/* set pointer to viewport begin */
-		uint16* ptr = (uint16*)&video->pixeldata[(line * Bwidth) + (video->vp.x * Bpp)];
+		uint16* ptr = (uint16*)&emu_video->pixeldata[(line * Bwidth) + (emu_video->vp.x * Bpp)];
 
 		/* fill viewport with black pixels */
 		for(i = 0; i < pce_vdc->disp_width; i++)
@@ -770,9 +801,9 @@ void pce_vdc_render_line(int line, t_video* video)
 
 	/* render sprite plane line (if enabled)
 	 * VDC CR (0x05) bit 6 = sprite enable/disable */
-	if((pce_vdc->reg[0x05] & 0x40) && (pce_vdc->planes & 2))
+	if(pce_vdc->reg[0x05] & 0x40)
 	{
 		pce_vdc_cache_sp();
-		pce_vdc_render_sp(line, video);
+		pce_vdc_render_sp(line);
 	}
 }

@@ -15,7 +15,6 @@
 #include "emu/pce/vdc_huc6270.h"
 #include "emu/pce/psg.h"
 #include "emu/pce/rom.h"
-/* #include "tools/memdump.h" */
 
 
 /**

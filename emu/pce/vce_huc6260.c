@@ -128,53 +128,54 @@ void pce_vce_w(int addr, int data)
 
 	switch(addr & ~1)
 	{
-		/* control register
-		 * bit 0-1: DCC (0=5.37MHz, 1=7.16MHz, 2,3=10.7MHz
+	case 0x0400: /* control register */
+		/* bit 0-1: DCC (0=5.37MHz, 1=7.16MHz, 2,3=10.7MHz
 		 * bit 2:   Frame/Field (0=262 lines, 1=263 lines)
 		 * bit 7:   Strip colorburst (0=don't strip, 1=strip) */
-		case 0x0400:
-			if(!msb)
-				pce_vce->ctrl = (data & 1);
-			break;
-
-		/* address */
-		case 0x402:
-			if(!msb)
-				pce_vce->addr = (pce_vce->addr & 0x0100) | data;
-			else
-				pce_vce->addr = (pce_vce->addr & 0x00FF) | ((data & 1) << 8);
-			break;
-
-		/* data */
-		case 0x404:
-			if(data != pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)])
+		if(!msb)
+			pce_vce->ctrl = (data & 1);
+		break;
+	case 0x402: /* address */
+		if(!msb)
+			pce_vce->addr = (pce_vce->addr & 0x0100) | data;
+		else
+			pce_vce->addr = (pce_vce->addr & 0x00FF) | ((data & 1) << 8);
+		break;
+	case 0x404: /* data */
+		/* pce_vce->addr & 0x1FF is offset */
+		if(data != pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | msb])
+		{
+			pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | msb] = data;
+			if((pce_vce->addr & 0x0F) != 0x00)
 			{
-				pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)] = data;
-				if((pce_vce->addr & 0x0F) != 0x00)
-				{
-					uint16 tmp = *(uint16 *)&pce_vce->data[(pce_vce->addr << 1)];
+				/* form VCEs pixel_lut index */
+				uint16 tmp = *(uint16 *)&pce_vce->data[(pce_vce->addr << 1)];
 #ifndef LSB
-					tmp = (tmp >> 8) | (tmp << 8);
-#endif
-					pce_vce->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vce->pixel_lut[tmp];
-				}
+				tmp = (tmp >> 8) | (tmp << 8);
+#endif /* LSB */
 
-				/* update overscan color */
-				if((pce_vce->addr & 0x0F) == 0x00)
-				{
-					int n;
-					uint16 tmp = *(uint16 *)&pce_vce->data[0];
-#ifndef LSB
-					tmp = (tmp >> 8) | (tmp << 8);
-#endif
-					for(n = 0; n < 0x10; n += 1)
-						pce_vce->pixel[0][(n << 4)] = pce_vce->pixel_lut[tmp];
-				}
+				pce_vce->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vce->pixel_lut[tmp];
 			}
 
-			/* increment address if MSB */
-			if(msb)
-				pce_vce->addr += 1;
-			break;
+			/* update overscan color (color around TV visible area. This is
+			 * really not important) */
+			if((pce_vce->addr & 0x0F) == 0x00)
+			{
+				int n;
+				/* form VCEs pixel_lut index */
+				uint16 tmp = *(uint16 *)&pce_vce->data[0];
+#ifndef LSB
+				tmp = (tmp >> 8) | (tmp << 8);
+#endif /* LSB */
+
+				for(n = 0; n < 0x10; n ++)
+					pce_vce->pixel[0][(n << 4)] = pce_vce->pixel_lut[tmp];
+			}
+		}
+
+		/* increment address if MSB set */
+		if(msb)
+			pce_vce->addr++;
+		break;
 	}
 }

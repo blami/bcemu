@@ -70,19 +70,21 @@ typedef struct
 	uint8 vram_latch;               /**< video RAM latch */
 	int8 addr_inc;                  /**< address increment register (0x05) */
 	uint8 dvssr;                    /**< VRAM to SATB DMA trigger register */
+	uint32 byr;                     /**< equivalent to reg[0x08] & 0x1FF */
 
 	/* write pointers */
-	uint16* vram_write;             /**< write location in VRAM */
-	uint16* satb_write;             /**< write location in SATB */
+	uint16* vram_write;             /**< current write location in VRAM */
+	uint16* satb_write;             /**< current write location in SATB */
 
 	/* display */
 	int disp_width;                 /**< display width (pixels) */
 	int disp_height;                /**< display height (pixels) */
 	int disp_width_old;             /**< old display width */
 	int disp_height_old;            /**< old display height */
-	uint32 y_offset;
-	uint32 byr;
-	int planes;                 /**< plane enable, bit 0: background, bit 1: sprite */
+
+	uint32 y_offset;                /**< precalculated value of background Y
+	                                offset to screen origin */
+
 	int buf_shift;
 	uint32 buf_col_mask;
 	uint32 buf_row_mask;
@@ -91,7 +93,7 @@ typedef struct
 
 	/* background tile pattern cache (indexed by pat_addr (addr << 6) */
 	uint8 bp_cache[0x20000];        /**< pattern cache */
-	uint16 bp_list[0x800];          /**< list of background tile patterns */
+	uint16 bp_list[0x800];          /**< list of background tile patterns  */
 	uint16 bp_list_i;               /**< current index */
 	uint8 bp_dirty[0x800];          /**< dirty entries */
 
@@ -101,8 +103,8 @@ typedef struct
 	uint16 sp_list_i;               /**< current index */
 	uint16 sp_dirty[0x200];         /**< dirty entries */
 
-	/* sprite list */
-	t_pce_vdc_sprite sprite[0x40];
+	/* sprite list (structurized SATB) */
+	t_pce_vdc_sprite sprite[0x40];  /**< list of sprites used in current frame */
 	uint8 sprite_list[0x40];
 	uint8 sprite_list_i;
 
@@ -126,10 +128,10 @@ typedef struct
 /*
  * Sprite attribute flags
  */
-#define SP_ENABLE       0x80
-#define SP_SPBG         0x01
-#define SP_CGX          0x02
-#define SP_YFLIP        0x04
+#define SP_ENABLE       0x80        /**< sprite enable */
+#define SP_SPBG         0x01        /**< sprite behind background */
+#define SP_CGX          0x02        /**< CGX (double width) */
+#define SP_YFLIP        0x04        /**< Y-mirror flip (~pat_addr) */
 
 /* -------------------------------------------------------------------------- *
  * Globals                                                                    *

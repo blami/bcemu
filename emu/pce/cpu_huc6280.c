@@ -186,44 +186,44 @@ unsigned int pce_cpu_reg_r(int name)
 
 	switch(name)
 	{
-		/* general */
-		case CPU_PC:
-			return PCD;
-		case CPU_S:
-			return S;
-		case CPU_P:
-			return P;
-		case CPU_A:
-			return A;
-		case CPU_X:
-			return X;
-		case CPU_Y:
-			return Y;
-		case CPU_IRQ_MASK:
-			return pce_cpu->irq_mask;
-		case CPU_TIMER_STATE:
-			return pce_cpu->timer_status;
-		case CPU_NMI_STATE:
-			return pce_cpu->nmi_state;
-		case CPU_IRQ1_STATE:
-			return pce_cpu->irq_state[0];
-		case CPU_IRQ2_STATE:
-			return pce_cpu->irq_state[1];
-		case CPU_IRQT_STATE:
-			return pce_cpu->irq_state[2];
-		
-		/* offset */
-		case REG_PREVIOUSPC:
-			return pce_cpu->ppc.d;
-		default:
-			if(name <= REG_SP_CONTENTS)
-			{
-				unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
-				debug("offset register RDMEM: %x", offset);
+	/* general */
+	case CPU_PC:
+		return PCD;
+	case CPU_S:
+		return S;
+	case CPU_P:
+		return P;
+	case CPU_A:
+		return A;
+	case CPU_X:
+		return X;
+	case CPU_Y:
+		return Y;
+	case CPU_IRQ_MASK:
+		return pce_cpu->irq_mask;
+	case CPU_TIMER_STATE:
+		return pce_cpu->timer_status;
+	case CPU_NMI_STATE:
+		return pce_cpu->nmi_state;
+	case CPU_IRQ1_STATE:
+		return pce_cpu->irq_state[0];
+	case CPU_IRQ2_STATE:
+		return pce_cpu->irq_state[1];
+	case CPU_IRQT_STATE:
+		return pce_cpu->irq_state[2];
 
-				if(offset < 0x1ff)
-					return RDMEM(offset) | (RDMEM(offset+1) << 8);
-			}
+	/* offset */
+	case REG_PREVIOUSPC:
+		return pce_cpu->ppc.d;
+	default:
+		if(name <= REG_SP_CONTENTS)
+		{
+			unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
+			debug("offset register RDMEM: %x", offset);
+
+			if(offset < 0x1ff)
+				return RDMEM(offset) | (RDMEM(offset+1) << 8);
+		}
 	}
 
 	debug("couldn't get register=%d", name);
@@ -241,62 +241,62 @@ void pce_cpu_reg_w(int name, unsigned int value)
 
 	switch(name)
 	{
-		/* general */
-		case CPU_PC:
-			PCW = value;
-			break;
-		case CPU_S:
-			S = value;
-			break;
-		case CPU_P:
-			P = value;
-			break;
-		case CPU_A:
-			A = value;
-			break;
-		case CPU_X:
-			X = value;
-			break;
-		case CPU_Y:
-			Y = value;
-			break;
-		case CPU_IRQ_MASK:
-			pce_cpu->irq_mask = value;
-			CHECK_IRQ_LINES;
-			break;
-		case CPU_TIMER_STATE:
-			pce_cpu->timer_status = value;
-			break;
-		case CPU_NMI_STATE:
-			pce_cpu_set_nmi_line(value);
-			break;
-		case CPU_IRQ1_STATE:
-			pce_cpu_set_irq_line(0, value);
-			break;
-		case CPU_IRQ2_STATE:
-			pce_cpu_set_irq_line(1, value);
-			break;
-		case CPU_IRQT_STATE:
-			pce_cpu_set_irq_line(2, value);
-			break;
+	/* general */
+	case CPU_PC:
+		PCW = value;
+		break;
+	case CPU_S:
+		S = value;
+		break;
+	case CPU_P:
+		P = value;
+		break;
+	case CPU_A:
+		A = value;
+		break;
+	case CPU_X:
+		X = value;
+		break;
+	case CPU_Y:
+		Y = value;
+		break;
+	case CPU_IRQ_MASK:
+		pce_cpu->irq_mask = value;
+		CHECK_IRQ_LINES;
+		break;
+	case CPU_TIMER_STATE:
+		pce_cpu->timer_status = value;
+		break;
+	case CPU_NMI_STATE:
+		pce_cpu_set_nmi_line(value);
+		break;
+	case CPU_IRQ1_STATE:
+		pce_cpu_set_irq_line(0, value);
+		break;
+	case CPU_IRQ2_STATE:
+		pce_cpu_set_irq_line(1, value);
+		break;
+	case CPU_IRQT_STATE:
+		pce_cpu_set_irq_line(2, value);
+		break;
 
-		/* offset */
-		default:
-			if(name <= REG_SP_CONTENTS)
-			{
-				unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
+	/* offset */
+	default:
+		if(name <= REG_SP_CONTENTS)
+		{
+			unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
 
-				debug("offset register WRMEM: %x", offset);
-				if(offset < 0x1ff)
-				{
-					WRMEM(offset, value & 0xff);
-					WRMEM(offset+1, (value >> 8) & 0xff);
-				}
-			}
-			else
+			debug("offset register WRMEM: %x", offset);
+			if(offset < 0x1ff)
 			{
-				debug("couldn't set register=%d", name);
+				WRMEM(offset, value & 0xff);
+				WRMEM(offset+1, (value >> 8) & 0xff);
 			}
+		}
+		else
+		{
+			debug("couldn't set register=%d", name);
+		}
 	}
 }
 
@@ -354,7 +354,7 @@ static void pce_cpu_set_irq_callback(int (*callback)(int irqline))
  */
 static int pce_cpu_irq_callback(int irqline)
 {
-	debug("CPU irq callback: IRQ%d (line=%d)", irqline+1, irqline);
+	//debug("CPU irq callback: IRQ%d (line=%d)", irqline+1, irqline);
 	return 0;
 }
 
@@ -371,14 +371,14 @@ static int pce_cpu_irq_r(int offset)
 
 	switch(offset)
 	{
-		case 0:
-			return pce_cpu->irq_mask;
-		case 1:
-			status=0;
-			if(pce_cpu->irq_state[1] != CLEAR_LINE) status |= 1; /* IRQ 2 */
-			if(pce_cpu->irq_state[0] != CLEAR_LINE) status |= 2; /* IRQ 1 */
-			if(pce_cpu->irq_state[2] != CLEAR_LINE) status |= 4; /* TIMER */
-			return status;
+	case 0:
+		return pce_cpu->irq_mask;
+	case 1:
+		status=0;
+		if(pce_cpu->irq_state[1] != CLEAR_LINE) status |= 1; /* IRQ 2 */
+		if(pce_cpu->irq_state[0] != CLEAR_LINE) status |= 2; /* IRQ 1 */
+		if(pce_cpu->irq_state[2] != CLEAR_LINE) status |= 4; /* TIMER */
+		return status;
 	}
 
 	return 0;
@@ -395,14 +395,14 @@ static void pce_cpu_irq_w(int offset, int data)
 
 	switch(offset)
 	{
-		case 0:
-			pce_cpu->irq_mask = data & 0x7;
-			CHECK_IRQ_LINES;
-			break;
-		case 1:
-			pce_cpu->timer_value = pce_cpu->timer_load;
-			pce_cpu->timer_ack = 1;
-			break;
+	case 0:
+		pce_cpu->irq_mask = data & 0x7;
+		CHECK_IRQ_LINES;
+		break;
+	case 1:
+		pce_cpu->timer_value = pce_cpu->timer_load;
+		pce_cpu->timer_ack = 1;
+		break;
 	}
 }
 
@@ -416,10 +416,10 @@ static int pce_cpu_timer_r(int offset)
 
 	switch(offset) 
 	{
-		case 0:
-			return (pce_cpu->timer_value / 1024) & 127;
-		case 1:
-			return pce_cpu->timer_status;
+	case 0:
+		return (pce_cpu->timer_value / 1024) & 127;
+	case 1:
+		return pce_cpu->timer_status;
 	}
 
 	return 0;
@@ -436,18 +436,18 @@ static void pce_cpu_timer_w(int offset, int data)
 
 	switch(offset)
 	{
-		case 0:
-			pce_cpu->timer_load = pce_cpu->timer_value =
-				((data & 127) + 1) * 1024;
-			return;
-		case 1:
-			if(data&1)
-			{
-				if(pce_cpu->timer_status==0)
-					pce_cpu->timer_value = pce_cpu->timer_load;
-			}
-			pce_cpu->timer_status=data&1;
-			return;
+	case 0:
+		pce_cpu->timer_load = pce_cpu->timer_value =
+			((data & 127) + 1) * 1024;
+		return;
+	case 1:
+		if(data&1)
+		{
+			if(pce_cpu->timer_status==0)
+				pce_cpu->timer_value = pce_cpu->timer_load;
+		}
+		pce_cpu->timer_status=data&1;
+		return;
 	}
 }
 
@@ -504,28 +504,28 @@ static int pce_cpu_iopage_r(int addr)
 
 	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* 0x0000-0x0003 VDC */
-			if(addr <= 0x0003)
-				return pce_vdc_r(addr);
-			break;
-		case 0x0400: /* 0x0400-0x0405 VCE */
-			if(addr <= 0x0405)
-				return pce_vce_r(addr);
-			break;
-		case 0x0800: /* 0x0800-0x0809 PSG */
-			break;
-		case 0x0C00: /* 0x0C00-0x0C01 timer */
-			if(addr == 0x0C00 || addr == 0x0C01)
-				return pce_cpu_timer_r(addr & 1);
-			break;
-		case 0x1000: /* 0x1000 input port */
-			if(addr == 0x1000)
-				return pce_cpu_input_r();
-			break;
-		case 0x1400: /* 0x1402-0x1403 IRQ */
-			if(addr == 0x1402 || addr == 0x1403)
-				return pce_cpu_irq_r(addr & 1);
-			break;
+	case 0x0000: /* 0x0000-0x0003 VDC */
+		if(addr <= 0x0003)
+			return pce_vdc_r(addr);
+		break;
+	case 0x0400: /* 0x0400-0x0405 VCE */
+		if(addr <= 0x0405)
+			return pce_vce_r(addr);
+		break;
+	case 0x0800: /* 0x0800-0x0809 PSG */
+		break;
+	case 0x0C00: /* 0x0C00-0x0C01 timer */
+		if(addr == 0x0C00 || addr == 0x0C01)
+			return pce_cpu_timer_r(addr & 1);
+		break;
+	case 0x1000: /* 0x1000 input port */
+		if(addr == 0x1000)
+			return pce_cpu_input_r();
+		break;
+	case 0x1400: /* 0x1402-0x1403 IRQ */
+		if(addr == 0x1402 || addr == 0x1403)
+			return pce_cpu_irq_r(addr & 1);
+		break;
 	}
 
 	debug("CPU UNKNOWN iopage/read %04X (PC:%08X)", addr,
@@ -547,48 +547,48 @@ static void pce_cpu_iopage_w(int addr, int data)
 
 	switch(addr & 0x1C00)
 	{
-		case 0x0000: /* 0x0000-0x0003 VDC */
-			if(addr <= 0x0003)
-			{
-				pce_vdc_w(addr, data);
-				return;
-			}
-			break;
-		case 0x0400: /* 0x0400-0x0405 VCE */
-			if(addr <= 0x0405)
-			{
-				pce_vce_w(addr, data);
-				return;
-			}
-			break;
-		case 0x0800: /* 0x0800-0x0805 PSG */
-			if(addr <= 0x0809)
-			{
-				pce_psg_w(addr, data);
-				return;
-			};
-			break;
-		case 0x0C00: /* 0x0C00-0x0C01 timer */
-			if(addr == 0x0C00 || addr == 0x0C01)
-			{
-				pce_cpu_timer_w(addr & 1, data);
-				return;
-			};
-			break;
-		case 0x1000: /* 0x1000 input port */
-			if(addr == 0x1000)
-			{
-				pce_cpu_input_w(data);
-				return;
-			}
-			break;
-		case 0x1400: /* 0x1402-0x1403 IRQ */
-			if(addr == 0x1402 || addr == 0x1403)
-			{
-				pce_cpu_irq_w(addr & 1, data);
-				return;
-			};
-			break;
+	case 0x0000: /* 0x0000-0x0003 VDC */
+		if(addr <= 0x0003)
+		{
+			pce_vdc_w(addr, data);
+			return;
+		}
+		break;
+	case 0x0400: /* 0x0400-0x0405 VCE */
+		if(addr <= 0x0405)
+		{
+			pce_vce_w(addr, data);
+			return;
+		}
+		break;
+	case 0x0800: /* 0x0800-0x0805 PSG */
+		if(addr <= 0x0809)
+		{
+			pce_psg_w(addr, data);
+			return;
+		};
+		break;
+	case 0x0C00: /* 0x0C00-0x0C01 timer */
+		if(addr == 0x0C00 || addr == 0x0C01)
+		{
+			pce_cpu_timer_w(addr & 1, data);
+			return;
+		};
+		break;
+	case 0x1000: /* 0x1000 input port */
+		if(addr == 0x1000)
+		{
+			pce_cpu_input_w(data);
+			return;
+		}
+		break;
+	case 0x1400: /* 0x1402-0x1403 IRQ */
+		if(addr == 0x1402 || addr == 0x1403)
+		{
+			pce_cpu_irq_w(addr & 1, data);
+			return;
+		};
+		break;
 	}
 
 	debug("CPU UNKNOWN iopage/write %02X: %04X (PC:%08X)", data, addr,

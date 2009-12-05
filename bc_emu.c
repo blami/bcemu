@@ -65,7 +65,6 @@ int emu_main(char* emu_name, char* ui_name)
 	/* initialize */
 	emu_ui->init();
 	emu_emu->init();
-	emu_emu->reset(); /* FIXME remove this! */
 
 	/* application main-loop */
 	debug("entering emu main-loop...");
@@ -79,10 +78,13 @@ int emu_main(char* emu_name, char* ui_name)
 
 		/* update video (render buffer) and sound (play buffer) */
 		emu_ui->update_video();
+		emu_ui->update_audio();
 
 		/* handle input related to UI */
 		if(emu_input->quit)
 			break; /* quit */
+		if(emu_input->reset)
+			emu_emu->reset(); /* reset */
 	}
 	debug("exiting emu main-loop...");
 

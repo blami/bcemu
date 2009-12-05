@@ -28,8 +28,9 @@ int sdl_init()
 	sdl = xmalloc(sizeof(t_sdl));
 	sdl = memset(sdl, 0, sizeof(t_sdl));
 
-	if(SDL_Init(SDL_INIT_VIDEO) < 0)
+	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return 0;
+
 	/* TODO configuration file section `ui.[sdl.]resoultion, ui.[sdl.]bpp */
 	if(!(sdl->screen = SDL_SetVideoMode(640, 480, 16, SDL_DOUBLEBUF)))
 	{
@@ -98,15 +99,19 @@ void sdl_update_video()
 {
 	SDL_Rect vp_rect;
 
-	/*
-	vp_rect.x = 0;
-	vp_rect.y = 0;
-	vp_rect.w = 1024;
-	vp_rect.h = 256;
-	*/
+	vp_rect.x = emu_video->vp.x;
+	vp_rect.y = emu_video->vp.y;
+	vp_rect.w = emu_video->vp.width;
+	vp_rect.h = emu_video->vp.height;
 
-	//SDL_FillRect(sdl->buffer, &sdl->buffer->clip_rect, SDL_MapRGB(sdl->screen->format, 0xFF, 0x0, 0xFF));
-	SDL_BlitSurface(sdl->buffer, &sdl->buffer->clip_rect, sdl->screen, &sdl->screen->clip_rect);
+	/* fill entire screen with black color if viewport was changed */
+	if(emu_video->vp.ch)
+		SDL_FillRect(sdl->screen, &sdl->screen->clip_rect,
+			SDL_MapRGB(sdl->screen->format, 0x0, 0x0, 0x0));
+	/* draw current viewport */
+	SDL_BlitSurface(sdl->buffer, &vp_rect, sdl->screen, &sdl->screen->clip_rect);
+
+	/* flip surfaces (doublebuffer) */
 	SDL_Flip(sdl->screen);
 }
 
@@ -136,11 +141,18 @@ void sdl_update_input()
 			debug("SDL keydown: %x", sdl->event.key.keysym.scancode);
 			switch(sdl->event.key.keysym.sym)
 			{
+			/* ESC or Q: quit */
 			case SDLK_ESCAPE:
+			case SDLK_q:
 				debug("SDL exit triggered");
 				emu_input->quit = 1;
 				break;
 			}
+			/* R: reset */
+			case SDLK_r:
+				debug("SDL reset triggered");
+				emu_input->reset = 1;
+				break;
 			break;
 		}
 	}

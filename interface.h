@@ -59,6 +59,7 @@ typedef struct
 typedef struct
 {
 	int quit;           /**< UI quit signal */
+	int reset;          /**< UI reset signal */
 
 } t_input;
 

@@ -45,7 +45,7 @@ int pce_vce_init()
 				val |= (j & (0x80 >> x)) ?
 					(uint32)(8 << (x << 2)) : 0;
 				val |= (i & (0x80 >> x)) ?
-					(uint32)(8 << (x << 2)) : 0;
+					(uint32)(4 << (x << 2)) : 0;
 			}
 #ifdef LSB
 			pce_vce->bp_lut[(j << 8) | i] = val;

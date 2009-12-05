@@ -90,7 +90,7 @@ void pce_frame()
 	assert(pce && pce_cpu && pce_vce && pce_vdc && pce_psg);
 
 	/* render 262 lines per frame (NTSC) */
-	for(pce_vdc->y_offset == pce_vdc->byr, line = 0; line < 262; line++)
+	for(pce_vdc->y_offset = pce_vdc->byr, line = 0; line < 262; line++)
 	{
 		/* VDC R (raster counter) register equals line + 64 */
 		if((line + 64) == (pce_vdc->reg[0x06] & 0x3FF))

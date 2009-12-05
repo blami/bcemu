@@ -226,9 +226,11 @@ void pce_vdc_w(int offset, int data)
 		case 0x0003:
 			//debug("VDC write: latch=%02x", pce_vdc->latch);
 			if(msb)
-				pce_vdc->reg[pce_vdc->latch] = (pce_vdc->reg[pce_vdc->latch] & 0x00FF) | (data << 8);
+				pce_vdc->reg[pce_vdc->latch] =
+					(pce_vdc->reg[pce_vdc->latch] & 0x00FF) | (data << 8);
 			else
-				pce_vdc->reg[pce_vdc->latch] = (pce_vdc->reg[pce_vdc->latch] & 0xFF00) | data;
+				pce_vdc->reg[pce_vdc->latch] =
+					(pce_vdc->reg[pce_vdc->latch] & 0xFF00) | data;
 
 			switch(pce_vdc->latch)
 			{
@@ -518,7 +520,7 @@ static void pce_vdc_cache_bp()
 	if(!pce_vdc->bp_list_i)
 		return;
 
-	for(i = 0; i < pce_vdc->bp_list_i; i += 1)
+	for(i = 0; i < pce_vdc->bp_list_i; i++)
 	{
 		/* lookup pat_addr in list */
 		pat_addr = pce_vdc->bp_list[i];
@@ -563,7 +565,7 @@ static void pce_vdc_cache_sp()
 	if(!pce_vdc->sp_list_i)
 		return;
 
-	for(i = 0; i < pce_vdc->sp_list_i; i += 1)
+	for(i = 0; i < pce_vdc->sp_list_i; i++)
 	{
 		/* lookup pat_addr in list */
 		pat_addr = pce_vdc->sp_list[i];
@@ -586,7 +588,9 @@ static void pce_vdc_cache_sp()
 					i1 = (b1 >> (x ^ 0x0F)) & 1;
 					i2 = (b2 >> (x ^ 0x0F)) & 1;
 					i3 = (b3 >> (x ^ 0x0F)) & 1;
-					c = (i3 << 3 | i2 << 2 | i1 << 1 | i0);
+
+					/* color */
+					c = (i3 << 3 | i2 << 2 | i1 << 1 | i0 << 0);
 
 					pce_vdc->sp_cache[(pat_addr << 8)
 						| (y << 4) | x] = c;
@@ -615,7 +619,6 @@ static void pce_vdc_render_bp(int line, t_video* video)
 	uint16 *dst;
 	int column, pat_addr, attr, x, shift, v_line, nt_scroll;
 	int xscroll = (pce_vdc->reg[7] & 0x03FF);
-	//int end = disp_nt_width;
 	int end = pce_vdc->disp_width >> 3;
 
 	int bpp = 16;
@@ -634,16 +637,18 @@ static void pce_vdc_render_bp(int line, t_video* video)
 
 	/* draw an extra tile for the last column */
 	if(shift)
-		end += 1;
+		end++;
 
 	/* point to current offset within name table */
-	nt = (uint16 *)&pce->vram[(pce_vdc->y_offset >> 3) << pce_vdc->buf_shift];
+	nt = (uint16 *)&pce->vram[
+		(pce_vdc->y_offset >> 3) << pce_vdc->buf_shift];
 
 	/* point to start in line buffer */
-	dst = (uint16 *)&video->pixeldata[(line * Bwidth) + ((0x20 + (0 - shift)) << 1)];
+	dst = (uint16 *)&video->pixeldata[
+		(line * Bwidth) + ((0x20 + (0 - shift)) << 1)];
 
 	/* draw columns */
-	for(column = 0; column < end; column += 1)
+	for(column = 0; column < end; column++)
 	{
 		/* get attribute */
 		attr = nt[(column + nt_scroll) & pce_vdc->buf_row_mask];
@@ -658,7 +663,8 @@ static void pce_vdc_render_bp(int line, t_video* video)
 		/* draw column */
 		for(x = 0; x < 8; x++)
 		{
-			dst[(column << 3) | (x)] = pce_vce->pixel[0][(src[x] | palette)];
+			dst[(column << 3) | (x)] =
+				pce_vce->pixel[0][(src[x] | palette)];
 		}
 	}
 }
@@ -701,14 +707,15 @@ static void pce_vdc_render_sp(int line, t_video* video)
 			pat_addr = (sp->pat_addr_l | pat_addr_mask);
 			v_line &= 0x0F;
 
-			src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0f) << 4)];
-			dst = (uint16 *)&video->pixeldata[(line * Bwidth) + (((0x20+sp->xpos) & 0x1ff) * (Bpp))];
+			src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0F) << 4)];
+			dst = (uint16 *)&video->pixeldata[(line * Bwidth)
+				+ (((0x20 + sp->xpos) & 0x1FF) * (Bpp))];
 
 			for(x = 0; x < 0x10; x += 1)
 			{
 				c = src[x];
 				if(c)
-					dst[x] = pce_vce->pixel[1][((c) | sp->palette)];
+					dst[x] = pce_vce->pixel[1][(c | sp->palette)];
 			}
 
 			if(sp->attr & SP_CGX)
@@ -721,7 +728,7 @@ static void pce_vdc_render_sp(int line, t_video* video)
 				{
 					c = src[x];
 					if(c)
-						dst[x] = pce_vce->pixel[1][((c) | sp->palette)];
+						dst[x] = pce_vce->pixel[1][(c | sp->palette)];
 				}
 			}
 		}
@@ -756,6 +763,7 @@ void pce_vdc_render_line(int line, t_video* video)
 
 		/* set pointer to viewport begin */
 		uint16* ptr = (uint16*)&video->pixeldata[(line * Bwidth) + (video->vp.x * Bpp)];
+
 		/* fill viewport with black pixels */
 		for(i = 0; i < pce_vdc->disp_width; i++)
 			ptr[i] = pce_vce->pixel[0][0];

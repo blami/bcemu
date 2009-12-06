@@ -2,6 +2,7 @@
  * bc_emu: portable video game emulator                                       *
  * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>                      *
  * Copyright © 1998-2000 Juergen Buchmueller                                  *
+ * Copyright © 2006 Mark Ormston
  * http://www.blami.net/prj/bc_emu                                            *
  *                                                                            *
  * This is free software licensed under MIT license. See LICENSE.             *
@@ -27,7 +28,7 @@
  * be set if x < 0 and Z if x == 0.
  * \param x             value that affects P flags 
  */
-#define SET_NZ(n)                                                       \
+#define SET_NZ(n) \
 	P = (P & ~(_pN | _pT | _pZ)) | (n & _pN) | ((n == 0) ? _pZ : 0)
 
 /**
@@ -35,7 +36,7 @@
  * \param set           bits to be set
  * \param clear         bits to be cleared
  */
-#define COMPOSE_P(set, clear)                                           \
+#define COMPOSE_P(set, clear) \
 	P = (P & ~clear) | set
 
 /* -------------------------------------------------------------------------- *
@@ -46,45 +47,45 @@
  * Handle specified interrupt vector. Takes 7 CPU cycles.
  * \param vector        interrupt vector 
  */
-#define DO_INTERRUPT(vector)                                            \
-{                                                                       \
-	pce_cpu->extra_cycles += 7;                                         \
-	PUSH(PCH);                                                          \
-	PUSH(PCL);                                                          \
-	COMPOSE_P(0, _pB);                                                  \
-	PUSH(P);                                                            \
-	P = (P & ~_pD) | _pI;                                               \
-	PCL = RDMEM(vector);                                                \
-	PCH = RDMEM((vector+1));                                            \
+#define DO_INTERRUPT(vector) \
+{ \
+	pce_cpu->extra_cycles += 7; \
+	PUSH(PCH); \
+	PUSH(PCL); \
+	COMPOSE_P(0, _pB); \
+	PUSH(P); \
+	P = (P & ~_pD) | _pI; \
+	PCL = RDMEM(vector); \
+	PCH = RDMEM((vector+1)); \
 }
 
 /**
  * Check all interrupt lines and DO_INTERUPT on non-clear lines.
  */
-#define CHECK_IRQ_LINES                                                 \
-	if(!(P & _pI))                                                      \
-	{                                                                   \
-		/* IRQ1 */                                                      \
-		if(pce_cpu->irq_state[0] != CLEAR_LINE &&                       \
-			!(pce_cpu->irq_mask & 0x2))                                 \
-		{                                                               \
-			DO_INTERRUPT(INT_VEC_IRQ1);                                 \
-			(*pce_cpu->irq_callback)(0);                                \
-		}                                                               \
-		/* IRQ2 */                                                      \
-		else if(pce_cpu->irq_state[1] != CLEAR_LINE &&                  \
-			!(pce_cpu->irq_mask & 0x1))                                 \
-		{                                                               \
-			DO_INTERRUPT(INT_VEC_IRQ2);                                 \
-			(*pce_cpu->irq_callback)(1);                                \
-		}                                                               \
-		/* timer */                                                     \
-		else if(pce_cpu->irq_state[2] != CLEAR_LINE &&                  \
-			!(pce_cpu->irq_mask & 0x4) )                                \
-		{                                                               \
-			pce_cpu->irq_state[2] = CLEAR_LINE;                         \
-			DO_INTERRUPT(INT_VEC_TIMER);                                \
-		}                                                               \
+#define CHECK_IRQ_LINES \
+	if(!(P & _pI)) \
+	{ \
+		/* IRQ1 */ \
+		if(pce_cpu->irq_state[0] != CLEAR_LINE && \
+			!(pce_cpu->irq_mask & 0x2)) \
+		{ \
+			DO_INTERRUPT(INT_VEC_IRQ1); \
+			(*pce_cpu->irq_callback)(0); \
+		} \
+		/* IRQ2 */ \
+		else if(pce_cpu->irq_state[1] != CLEAR_LINE && \
+			!(pce_cpu->irq_mask & 0x1)) \
+		{ \
+			DO_INTERRUPT(INT_VEC_IRQ2); \
+			(*pce_cpu->irq_callback)(1); \
+		} \
+		/* timer */ \
+		else if(pce_cpu->irq_state[2] != CLEAR_LINE && \
+			!(pce_cpu->irq_mask & 0x4) ) \
+		{ \
+			pce_cpu->irq_state[2] = CLEAR_LINE; \
+			DO_INTERRUPT(INT_VEC_TIMER); \
+		} \
 	}
 
 /* -------------------------------------------------------------------------- *
@@ -95,8 +96,8 @@
  * Read memory.
  * \param addr          address to be read
  */
-#define RDMEM(addr)                                                     \
-	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) |                  \
+#define RDMEM(addr) \
+	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) | \
 		((addr) & 0x1fff))
 
 /**
@@ -104,15 +105,15 @@
  * \param addr          address to be written
  * \param data          data
  */
-#define WRMEM(addr,data)                                                \
-	pce_cpu_mem_w((pce_cpu->mmr[(addr) >> 13] << 13) |                  \
+#define WRMEM(addr,data) \
+	pce_cpu_mem_w((pce_cpu->mmr[(addr) >> 13] << 13) | \
 		((addr) & 0x1fff), data);
 
 /**
  * Read zero-page memory.
  * \param addr          address to be read
  */
-#define RDMEMZ(addr)                                                    \
+#define RDMEMZ(addr) \
 	pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff));
 
 /**
@@ -120,32 +121,32 @@
  * \param addr          address to be written
  * \param data          data
  */
-#define WRMEMZ(addr,data)                                               \
-	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff),          \
+#define WRMEMZ(addr,data) \
+	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff), \
 		data);
 
 /**
  * Read a word from memory.
  * \param addr          address to be read
  */
-#define RDMEMW(addr)                                                    \
-	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) |                  \
-		((addr) & 0x1fff))                                              \
-	|                                                                   \
-	(pce_cpu_mem_r((pce_cpu->mmr[(addr+1) >> 13] << 13) |               \
+#define RDMEMW(addr) \
+	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) | \
+		((addr) & 0x1fff)) \
+	| \
+	(pce_cpu_mem_r((pce_cpu->mmr[(addr+1) >> 13] << 13) | \
 		((addr + 1) & 0x1fff)) << 8)
 
 /**
  * Read a word from zero-page memory.
  * \param addr          address to be read
  */
-#define RDZPWORD(addr)                                                  \
-	((addr & 0xff) == 0xff) ?                                           \
-		/* handle corner cases */                                       \
-		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff))      \
+#define RDZPWORD(addr) \
+	((addr & 0xff) == 0xff) ? \
+		/* handle corner cases */ \
+		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff)) \
 		+ (pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr - 0xff) & 0x1fff)) << 8) \
-		:                                                               \
-		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr)&0x1fff))        \
+		: \
+		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr)&0x1fff)) \
 		+ (pce_cpu_mem_r( (pce_cpu->mmr[1] << 13) | ((addr+1)&0x1fff))<<8)
 
 /* -------------------------------------------------------------------------- *
@@ -156,16 +157,16 @@
  * Push register on stack. Lower SP (stack pointer).
  * \param reg           pushed register
  */
-#define PUSH(reg)                                                       \
-	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | pce_cpu->sp.d, reg);        \
+#define PUSH(reg) \
+	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | pce_cpu->sp.d, reg); \
 	S--
 
 /**
  * Pull register from stack. Increase SP (stack pointer).
  * \param reg           pulled register
  */
-#define PULL(reg)                                                       \
-	S++;                                                                \
+#define PULL(reg) \
+	S++; \
 	reg = pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | pce_cpu->sp.d)
 
 /* -------------------------------------------------------------------------- *
@@ -175,13 +176,13 @@
 /**
  * Read (fetch) opcode from memory at PC address.
  */
-#define RDOP()                                                          \
+#define RDOP() \
 	pce_cpu_mem_r((pce_cpu->mmr[PCW>>13] << 13) | (PCW & 0x1fff))
 
 /**
  * Read (fetch) opcode argument from memory at PC address.
  */
-#define RDOPARG()                                                       \
+#define RDOPARG() \
 	pce_cpu_mem_r((pce_cpu->mmr[PCW>>13] << 13) | (PCW&0x1fff))
 
 /* -------------------------------------------------------------------------- *
@@ -192,21 +193,21 @@
  * Branch relative.
  * \param cond          branch condition
  */
-#define BRA(cond)                                                       \
-	if(cond)                                                            \
-	{                                                                   \
-		/* positive branch */                                           \
-		pce_cpu->cycle_count -= 4;                                      \
-		arg1 = RDOPARG();                                               \
-		PCW++;                                                          \
-		EAW = PCW + (signed char)arg1;                                  \
-		PCD = EAD;                                                      \
-	}                                                                   \
-	else                                                                \
-	{                                                                   \
-		/* negative branch */                                           \
-		PCW++;                                                          \
-		pce_cpu->cycle_count -= 2;                                      \
+#define BRA(cond) \
+	if(cond) \
+	{ \
+		/* positive branch */ \
+		pce_cpu->cycle_count -= 4; \
+		arg1 = RDOPARG(); \
+		PCW++; \
+		EAW = PCW + (signed char)arg1; \
+		PCD = EAD; \
+	} \
+	else \
+	{ \
+		/* negative branch */ \
+		PCW++; \
+		pce_cpu->cycle_count -= 2; \
 	}
 
 /* -------------------------------------------------------------------------- *
@@ -217,104 +218,104 @@
  * Compute EA (effective address).
  * EA = zero page.
  */
-#define EA_ZPG                                                          \
-	ZPL = RDOPARG();                                                    \
-	PCW++;                                                              \
+#define EA_ZPG \
+	ZPL = RDOPARG(); \
+	PCW++; \
 	EAD = ZPD
 
 /**
  * Compute EA (effective address).
  * EA = zero page + X register.
  */
-#define EA_ZPX                                                          \
-	ZPL = RDOPARG() + X;                                                \
-	PCW++;                                                              \
+#define EA_ZPX \
+	ZPL = RDOPARG() + X; \
+	PCW++; \
 	EAD = ZPD
 
 /**
  * Compute EA (effective address).
  * EA = zero page + Y register.
  */
-#define EA_ZPY                                                          \
-	ZPL = RDOPARG() + Y;                                                \
-	PCW++;                                                              \
+#define EA_ZPY \
+	ZPL = RDOPARG() + Y; \
+	PCW++; \
 	EAD = ZPD
 
 /**
  * Compute EA (effective address).
  * EA = zero page indirect (pre).
  */
-#define EA_ZPI                                                          \
-	ZPL = RDOPARG();                                                    \
-	PCW++;                                                              \
+#define EA_ZPI \
+	ZPL = RDOPARG(); \
+	PCW++; \
 	EAD = RDZPWORD(ZPD)
 
 /**
  * Compute EA (effective address).
  * EA = zero page indirect + X register (pre).
  */
-#define EA_IDX                                                          \
-	ZPL = RDOPARG() + X;                                                \
-	PCW++;                                                              \
+#define EA_IDX \
+	ZPL = RDOPARG() + X; \
+	PCW++; \
 	EAD = RDZPWORD(ZPD);
 
 /**
  * Compute EA (effective address).
  * EA = zero page indirect + Y register (post).
  */
-#define EA_IDY                                                          \
-	ZPL = RDOPARG();                                                    \
-	PCW++;                                                              \
-	EAD = RDZPWORD(ZPD);                                                \
+#define EA_IDY \
+	ZPL = RDOPARG(); \
+	PCW++; \
+	EAD = RDZPWORD(ZPD); \
 	EAW += Y
 
 /**
  * Compute EA (effective address).
  * EA = absolute.
  */
-#define EA_ABS                                                          \
-	EAL = RDOPARG();                                                    \
-	PCW++;                                                              \
-	EAH = RDOPARG();                                                    \
+#define EA_ABS \
+	EAL = RDOPARG(); \
+	PCW++; \
+	EAH = RDOPARG(); \
 	PCW++
 
 /**
  * Compute EA (effective address).
  * EA = absolute + X register.
  */
-#define EA_ABX                                                          \
-	EA_ABS;                                                             \
+#define EA_ABX \
+	EA_ABS; \
 	EAW += X
 
 /**
  * Compute EA (effective address).
  * EA = absolute + Y register.
  */
-#define EA_ABY                                                          \
-	EA_ABS;                                                             \
+#define EA_ABY \
+	EA_ABS; \
 	EAW += Y
 
 /**
  * Compute EA (effective address).
  * EA = indirect.
  */
-#define EA_IND                                                          \
-	EA_ABS;                                                             \
-	arg1 = RDMEM(EAD);                                                  \
-	EAD++;                                                              \
-	EAH = RDMEM(EAD);                                                   \
+#define EA_IND \
+	EA_ABS; \
+	arg1 = RDMEM(EAD); \
+	EAD++; \
+	EAH = RDMEM(EAD); \
 	EAL = arg1
 
 /**
  * Compute EA (effective address).
  * EA indirect + X register.
  */
-#define EA_IAX                                                          \
-	EA_ABS;                                                             \
-	EAD+=X;                                                             \
-	arg1 = RDMEM(EAD);                                                  \
-	EAD++;                                                              \
-	EAH = RDMEM(EAD);                                                   \
+#define EA_IAX \
+	EA_ABS; \
+	EAD+=X; \
+	arg1 = RDMEM(EAD); \
+	EAD++; \
+	EAH = RDMEM(EAD); \
 	EAL = arg1
 
 /* -------------------------------------------------------------------------- *

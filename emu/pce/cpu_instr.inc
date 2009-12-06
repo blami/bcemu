@@ -1,7 +1,8 @@
-/******************************************************************************
+/*****************************************************************************
  * bc_emu: portable video game emulator                                       *
  * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>                      *
  * Copyright © 1998-2000 Juergen Buchmueller                                  *
+ * Copyright © 2006 Mark Ormston
  * http://www.blami.net/prj/bc_emu                                            *
  *                                                                            *
  * This is free software licensed under MIT license. See LICENSE.             *
@@ -19,833 +20,933 @@
 
 
 /* -------------------------------------------------------------------------- *
- * Flag helpers                                                               *
+ * 6280 instructions                                                          *
  * -------------------------------------------------------------------------- */
 
-/* 6280 ********************************************************
- *    ADC Add with carry
- ***************************************************************/
-#define ADC                                                     \
-    if (P & _pD)                                                \
-    {                                                            \
-    int c = (P & _pC);                                            \
-    int lo = (A & 0x0f) + (arg1 & 0x0f) + c;                     \
-    int hi = (A & 0xf0) + (arg1 & 0xf0);                         \
-        P &= ~(_pV | _pC);                                        \
-        if (lo > 0x09)                                            \
-        {                                                        \
-            hi += 0x10;                                         \
-            lo += 0x06;                                         \
-        }                                                        \
-        if (~(A^arg1) & (A^hi) & _pN)                            \
-            P |= _pV;                                            \
-        if (hi > 0x90)                                            \
-            hi += 0x60;                                         \
-        if (hi & 0xff00)                                        \
-            P |= _pC;                                            \
-        A = (lo & 0x0f) + (hi & 0xf0);                            \
-    }                                                            \
-    else                                                        \
-    {                                                            \
-    int c = (P & _pC);                                            \
-    int sum = A + arg1 + c;                                        \
-        P &= ~(_pV | _pC);                                        \
-        if (~(A^arg1) & (A^sum) & _pN)                            \
-            P |= _pV;                                            \
-        if (sum & 0xff00)                                        \
-            P |= _pC;                                            \
-        A = (uint8) sum;                                        \
-    }                                                            \
-    SET_NZ(A)
+/*
+ * ADC
+ * Add with carry.
+ */
+#define ADC \
+	if(P & _pD) \
+	{ \
+		int c = (P & _pC); \
+		int lo = (A & 0x0f) + (arg1 & 0x0f) + c; \
+		int hi = (A & 0xf0) + (arg1 & 0xf0); \
+		P &= ~(_pV | _pC); \
+		if(lo > 0x09) \
+		{ \
+			hi += 0x10; \
+			lo += 0x06; \
+		} \
+		if(~(A ^ arg1) & (A ^ hi) & _pN) \
+			P |= _pV; \
+		if(hi > 0x90) \
+			hi += 0x60; \
+		if(hi & 0xff00) \
+			P |= _pC; \
+		A = (lo & 0x0f) + (hi & 0xf0); \
+	} \
+	else \
+	{ \
+	int c = (P & _pC); \
+	int sum = A + arg1 + c; \
+		P &= ~(_pV | _pC); \
+		if(~(A^arg1) & (A^sum) & _pN) \
+			P |= _pV; \
+		if(sum & 0xff00) \
+			P |= _pC; \
+		A = (uint8)sum; \
+	} \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    AND Logical and
- ***************************************************************/
-#define AND                                                     \
-    A = (uint8)(A & arg1);                                        \
-    SET_NZ(A)
+/*
+ * AND
+ * Logical and.
+ */
+#define AND \
+	A = (uint8)(A & arg1); \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    ASL Arithmetic shift left
- ***************************************************************/
-#define ASL                                                     \
-    P = (P & ~_pC) | ((arg1 >> 7) & _pC);                        \
-    arg1 = (uint8)(arg1 << 1);                                    \
-    SET_NZ(arg1)
+/*
+ * ASL
+ * Attribute shift left.
+ */
+#define ASL \
+	P = (P & ~_pC) | ((arg1 >> 7) & _pC); \
+	arg1 = (uint8)(arg1 << 1); \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *  BBR Branch if bit is reset
- ***************************************************************/
-#define BBR(bit)                                                \
-    BRA(!(arg1 & (1<<bit)))
+/*
+ * BBR
+ * Branch if bit is reset.
+ */
+#define BBR(bit) \
+	BRA(!(arg1 & (1 << bit)))
 
-/* 6280 ********************************************************
- *  BBS Branch if bit is set
- ***************************************************************/
-#define BBS(bit)                                                \
-    BRA(arg1 & (1<<bit))
+/*
+ * BBS
+ * Branch if bit is set.
+ */
+#define BBS(bit) \
+	BRA(arg1 & (1 << bit))
 
-/* 6280 ********************************************************
- *    BCC Branch if carry clear
- ***************************************************************/
-#define BCC BRA(!(P & _pC))
+/*
+ * BBC
+ * Branch if carry clear.
+ */
+#define BCC \
+	BRA(!(P & _pC))
 
-/* 6280 ********************************************************
- *    BCS Branch if carry set
- ***************************************************************/
-#define BCS BRA(P & _pC)
+/*
+ * BCS
+ * Branch if carry set.
+ */
+#define BCS \
+	BRA(P & _pC)
 
-/* 6280 ********************************************************
- *    BEQ Branch if equal
- ***************************************************************/
-#define BEQ BRA(P & _pZ)
+/*
+ * BEQ
+ * Branch if equal.
+ */
+#define BEQ \
+	BRA(P & _pZ)
 
-/* 6280 ********************************************************
- *    BIT Bit test
- ***************************************************************/
-#define BIT                                                        \
-    P = (P & ~(_pN|_pV|_pT|_pZ))                                \
-        | ((arg1&0x80) ? _pN:0)                                    \
-        | ((arg1&0x40) ? _pV:0)                                    \
-        | ((arg1&A)  ? 0:_pZ)
+/*
+ * BIT
+ * Bit test.
+ */
+#define BIT \
+	P = (P & ~(_pN|_pV|_pT|_pZ)) \
+		| ((arg1 & 0x80) ? _pN:0) \
+		| ((arg1 & 0x40) ? _pV:0) \
+		| ((arg1 & A)  ? 0:_pZ)
 
-/* 6280 ********************************************************
- *    BMI Branch if minus
- ***************************************************************/
-#define BMI BRA(P & _pN)
+/*
+ * BMI
+ * Branch if minus.
+ */
+#define BMI \
+	BRA(P & _pN)
 
-/* 6280 ********************************************************
- *    BNE Branch if not equal
- ***************************************************************/
+/*
+ * BNE
+ * Branch if not equal.
+ */
 #define BNE BRA(!(P & _pZ))
 
-/* 6280 ********************************************************
- *    BPL Branch if plus
- ***************************************************************/
-#define BPL BRA(!(P & _pN))
+/*
+ * BPL
+ * Branch if plus.
+ */
+#define BPL \
+	BRA(!(P & _pN))
 
-/* 6280 ********************************************************
- *    BRK Break
- *    increment PC, push PC hi, PC lo, flags (with B bit set),
- *    set I flag, reset D flag and jump via IRQ vector
- ***************************************************************/
-#define BRK                                                     \
-    PCW++;                                                        \
-    PUSH(PCH);                                                    \
-    PUSH(PCL);                                                    \
-    PUSH(P | _pB);                                                \
-    P = (P & ~_pD) | _pI;                                        \
-    PCL = RDMEM(INT_VEC_IRQ2);                                 \
-    PCH = RDMEM(INT_VEC_IRQ2+1)
+/*
+ * BRK
+ * Break.
+ */
+#define BRK \
+	PCW++; \
+	PUSH(PCH); \
+	PUSH(PCL); \
+	PUSH(P | _pB); \
+	P = (P & ~_pD) | _pI; \
+	PCL = RDMEM(INT_VEC_IRQ2); \
+	PCH = RDMEM(INT_VEC_IRQ2+1)
 
-/* 6280 ********************************************************
- *    BSR Branch to subroutine
- ***************************************************************/
-#define BSR                                                     \
-    PUSH(PCH);                                                    \
-    PUSH(PCL);                                                    \
-    pce_cpu->cycle_count -= 4; /* 4 cycles here, 4 in BRA */            \
-    BRA(1)
+/*
+ * BVC
+ * Branch if overflow clear.
+ */
+#define BVC \
+	BRA(!(P & _pV))
 
-/* 6280 ********************************************************
- *    BVC Branch if overflow clear
- ***************************************************************/
-#define BVC BRA(!(P & _pV))
+/*
+ * BVS
+ * Branch if overflow set.
+ */
+#define BVS \
+	BRA(P & _pV)
 
-/* 6280 ********************************************************
- *    BVS Branch if overflow set
- ***************************************************************/
-#define BVS BRA(P & _pV)
+/*
+ * CLC
+ * Clear carry flag.
+ */
+#define CLC \
+	P &= ~_pC
 
-/* 6280 ********************************************************
- *  CLA Clear accumulator
- ***************************************************************/
-#define CLA                                                     \
-    A = 0
+/*
+ * CLD
+ * Clear decimal flag.
+ */
+#define CLD \
+	P &= ~_pD
 
-/* 6280 ********************************************************
- *    CLC Clear carry flag
- ***************************************************************/
-#define CLC                                                     \
-    P &= ~_pC
+/*
+ * CLI
+ * Clear interrupt flag.
+ */
+#define CLI \
+	if(P & _pI) \
+	{ \
+		P &= ~_pI; \
+		CHECK_IRQ_LINES; \
+	}
 
-/* 6280 ********************************************************
- *    CLD Clear decimal flag
- ***************************************************************/
-#define CLD                                                     \
-    P &= ~_pD
+/*
+ * CLV
+ * Clear overflow flag.
+ */
+#define CLV \
+	P &= ~_pV
 
-/* 6280 ********************************************************
- *    CLI Clear interrupt flag
- ***************************************************************/
-#define CLI                                                     \
-    if( P & _pI )                                                \
-    {                                                            \
-        P &= ~_pI;                                                \
-        CHECK_IRQ_LINES;                                        \
-    }
+/*
+ * CMP
+ * Compare accumulator.
+ */
+#define CMP \
+	P &= ~_pC; \
+	if(A >= arg1) \
+		P |= _pC; \
+	SET_NZ((uint8)(A - arg1))
 
+/*
+ * CPX
+ * Compare index X.
+ */
+#define CPX \
+	P &= ~_pC; \
+	if(X >= arg1) \
+		P |= _pC; \
+	SET_NZ((uint8)(X - arg1))
 
-/* 6280 ********************************************************
- *    CLV Clear overflow flag
- ***************************************************************/
-#define CLV                                                     \
-    P &= ~_pV
+/*
+ * CPY
+ * Compare index Y.
+ */
+#define CPY \
+	P &= ~_pC; \
+	if(Y >= arg1) \
+		P |= _pC; \
+	SET_NZ((uint8)(Y - arg1))
 
-/* 6280 ********************************************************
- *  CLX Clear index X
- ***************************************************************/
-#define CLX                                                     \
-    X = 0
+/*
+ * DEA
+ * Decrement accumulator.
+ */
+#define DEA \
+	A = (uint8)--A; \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *  CLY Clear index Y
- ***************************************************************/
-#define CLY                                                     \
-    Y = 0
+/*
+ * DEC
+ * Decrement memory.
+ */
+#define DEC \
+	arg1 = (uint8)--arg1; \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *    CMP Compare accumulator
- ***************************************************************/
-#define CMP                                                     \
-    P &= ~_pC;                                                    \
-    if (A >= arg1)                                                \
-        P |= _pC;                                                \
-    SET_NZ((uint8)(A - arg1))
+/*
+ * DEX
+ * Decrement index X.
+ */
+#define DEX \
+	X = (uint8)--X; \
+	SET_NZ(X)
 
-/* 6280 ********************************************************
- *    CPX Compare index X
- ***************************************************************/
-#define CPX                                                     \
-    P &= ~_pC;                                                    \
-    if (X >= arg1)                                                \
-        P |= _pC;                                                \
-    SET_NZ((uint8)(X - arg1))
+/*
+ * DEY
+ * Decrement index Y.
+ */
+#define DEY \
+	Y = (uint8)--Y; \
+	SET_NZ(Y)
 
-/* 6280 ********************************************************
- *    CPY Compare index Y
- ***************************************************************/
-#define CPY                                                     \
-    P &= ~_pC;                                                    \
-    if (Y >= arg1)                                                \
-        P |= _pC;                                                \
-    SET_NZ((uint8)(Y - arg1))
+/*
+ * EOR
+ * Logical exclusive or.
+ */
+#define EOR \
+	A = (uint8)(A ^ arg1); \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *  DEA Decrement accumulator
- ***************************************************************/
-#define DEA                                                     \
-    A = (uint8)--A;                                             \
-    SET_NZ(A)
+/*
+ * ILL
+ * Ilegal opcode.
+ */
+#define ILL \
+	debug("CPU illegal instruction (pc=%04x)", pce_cpu_reg_r(CPU_PC)); \
+	pce_cpu->cycle_count -= 2;
 
-/* 6280 ********************************************************
- *    DEC Decrement memory
- ***************************************************************/
-#define DEC                                                     \
-    arg1 = (uint8)--arg1;                                         \
-    SET_NZ(arg1)
+/*
+ * INA
+ * Increment accumulator.
+ */
+#define INA \
+	A = (uint8)++A; \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    DEX Decrement index X
- ***************************************************************/
-#define DEX                                                     \
-    X = (uint8)--X;                                             \
-    SET_NZ(X)
+/*
+ * INC
+ * Increment memory.
+ */
+#define INC \
+	arg1 = (uint8)++arg1; \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *    DEY Decrement index Y
- ***************************************************************/
-#define DEY                                                     \
-    Y = (uint8)--Y;                                             \
-    SET_NZ(Y)
+/*
+ * INX
+ * Increment index X.
+ */
+#define INX \
+	X = (uint8)++X; \
+	SET_NZ(X)
 
-/* 6280 ********************************************************
- *    EOR Logical exclusive or
- ***************************************************************/
-#define EOR                                                     \
-    A = (uint8)(A ^ arg1);                                        \
-    SET_NZ(A)
+/*
+ * INY
+ * Increment index Y.
+ */
+#define INY \
+	Y = (uint8)++Y; \
+	SET_NZ(Y)
 
-/* 6280 ********************************************************
- *    ILL Illegal opcode
- ***************************************************************/
-#define ILL                                                     \
-    pce_cpu->cycle_count -= 2; /* (assumed) */                          
+/*
+ * JMP
+ * Jump to effective address.
+ */
+#define JMP \
+	PCD = EAD
 
-/* 6280 ********************************************************
- *  INA Increment accumulator
- ***************************************************************/
-#define INA                                                     \
-    A = (uint8)++A;                                             \
-    SET_NZ(A)
+/*
+ * JSR
+ * Jump to subroutine.
+ */
+#define JSR \
+	PCW--; \
+	PUSH(PCH); \
+	PUSH(PCL); \
+	PCD = EAD
 
-/* 6280 ********************************************************
- *    INC Increment memory
- ***************************************************************/
-#define INC                                                     \
-    arg1 = (uint8)++arg1;                                         \
-    SET_NZ(arg1)
+/*
+ * LDA
+ * Load accumulator.
+ */
+#define LDA \
+	A = (uint8)arg1; \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    INX Increment index X
- ***************************************************************/
-#define INX                                                     \
-    X = (uint8)++X;                                             \
-    SET_NZ(X)
+/*
+ * LDX
+ * Load index X.
+ */
+#define LDX \
+	X = (uint8)arg1; \
+	SET_NZ(X)
 
-/* 6280 ********************************************************
- *    INY Increment index Y
- ***************************************************************/
-#define INY                                                     \
-    Y = (uint8)++Y;                                             \
-    SET_NZ(Y)
+/*
+ * LDY
+ * Load index Y.
+ */
+#define LDY \
+	Y = (uint8)arg1; \
+	SET_NZ(Y)
 
-/* 6280 ********************************************************
- *    JMP Jump to address
- *    set PC to the effective address
- ***************************************************************/
-#define JMP                                                     \
-    PCD = EAD
+/*
+ * LSR
+ * Logical shift right.
+ */
+#define LSR \
+	P = (P & ~_pC) | (arg1 & _pC); \
+	arg1 = (uint8)arg1 >> 1; \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *    JSR Jump to subroutine
- *    decrement PC (sic!) push PC hi, push PC lo and set
- *    PC to the effective address
- ***************************************************************/
-#define JSR                                                     \
-    PCW--;                                                        \
-    PUSH(PCH);                                                    \
-    PUSH(PCL);                                                    \
-    PCD = EAD
-
-/* 6280 ********************************************************
- *    LDA Load accumulator
- ***************************************************************/
-#define LDA                                                     \
-    A = (uint8)arg1;                                             \
-    SET_NZ(A)
-
-/* 6280 ********************************************************
- *    LDX Load index X
- ***************************************************************/
-#define LDX                                                     \
-    X = (uint8)arg1;                                             \
-    SET_NZ(X)
-
-/* 6280 ********************************************************
- *    LDY Load index Y
- ***************************************************************/
-#define LDY                                                     \
-    Y = (uint8)arg1;                                             \
-    SET_NZ(Y)
-
-/* 6280 ********************************************************
- *    LSR Logic shift right
- *    0 -> [7][6][5][4][3][2][1][0] -> C
- ***************************************************************/
-#define LSR                                                     \
-    P = (P & ~_pC) | (arg1 & _pC);                                \
-    arg1 = (uint8)arg1 >> 1;                                        \
-    SET_NZ(arg1)
-
-/* 6280 ********************************************************
- *    NOP No operation
- ***************************************************************/
+/*
+ * NOP
+ * No operation.
+ */
 #define NOP
 
-/* 6280 ********************************************************
- *    ORA Logical inclusive or
- ***************************************************************/
-#define ORA                                                     \
-    A = (uint8)(A | arg1);                                        \
-    SET_NZ(A)
+/*
+ * ORA
+ * Logical inclusive or.
+ */
+#define ORA \
+	A = (uint8)(A | arg1); \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    PHA Push accumulator
- ***************************************************************/
-#define PHA                                                     \
-    PUSH(A)
+/*
+ * PHA
+ * Push accumulator.
+ */
+#define PHA \
+	PUSH(A)
 
-/* 6280 ********************************************************
- *    PHP Push processor status (flags)
- ***************************************************************/
-#define PHP                                                     \
-    COMPOSE_P(0,0);                                             \
-    PUSH(P)
+/*
+ * PHP
+ * Push status (P register).
+ */
+#define PHP \
+	COMPOSE_P(0,0); \
+	PUSH(P)
 
-/* 6280 ********************************************************
- *  PHX Push index X
- ***************************************************************/
-#define PHX                                                     \
-    PUSH(X)
+/*
+ * PHX
+ * Push index X.
+ */
+#define PHX \
+	PUSH(X)
 
-/* 6280 ********************************************************
- *  PHY Push index Y
- ***************************************************************/
-#define PHY                                                     \
-    PUSH(Y)
+/*
+ * PHY
+ * Push index Y.
+ */
+#define PHY \
+	PUSH(Y)
 
-/* 6280 ********************************************************
- *    PLA Pull accumulator
- ***************************************************************/
-#define PLA                                                     \
-    PULL(A);                                                    \
-    SET_NZ(A)
+/*
+ * PLA
+ * Pull accumulator.
+ */
+#define PLA \
+	PULL(A); \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    PLP Pull processor status (flags)
- ***************************************************************/
-#define PLP                                                     \
-    PULL(P);                                                     \
-    CHECK_IRQ_LINES
+/*
+ * PLP
+ * Pull status (P register).
+ */
+#define PLP \
+	PULL(P); \
+	CHECK_IRQ_LINES
 
-/* 6280 ********************************************************
- *  PLX Pull index X
- ***************************************************************/
-#define PLX                                                     \
-    PULL(X)
+/*
+ * PLX
+ * Pull index X.
+ */
+#define PLX \
+	PULL(X)
 
-/* 6280 ********************************************************
- *  PLY Pull index Y
- ***************************************************************/
-#define PLY                                                     \
-    PULL(Y)
+/*
+ * PLY
+ * Pull index Y.
+ */
+#define PLY \
+	PULL(Y)
 
-/* 6280 ********************************************************
- *  RMB Reset memory bit
- ***************************************************************/
-#define RMB(bit)                                                \
-    arg1 &= ~(1<<bit)
+/*
+ * RMB
+ * Reset memory bit.
+ */
+#define RMB(bit) \
+	arg1 &= ~(1 << bit)
 
-/* 6280 ********************************************************
- *    ROL Rotate left
- *    new C <- [7][6][5][4][3][2][1][0] <- C
- ***************************************************************/
-#define ROL                                                     \
-    arg1 = (arg1 << 1) | (P & _pC);                                \
-    P = (P & ~_pC) | ((arg1 >> 8) & _pC);                        \
-    arg1 = (uint8)arg1;                                            \
-    SET_NZ(arg1)
+/*
+ * ROL
+ * Rotate left.
+ */
+#define ROL \
+	arg1 = (arg1 << 1) | (P & _pC); \
+	P = (P & ~_pC) | ((arg1 >> 8) & _pC); \
+	arg1 = (uint8)arg1; \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *    ROR Rotate right
- *    C -> [7][6][5][4][3][2][1][0] -> new C
- ***************************************************************/
-#define ROR                                                     \
-    arg1 |= (P & _pC) << 8;                                        \
-    P = (P & ~_pC) | (arg1 & _pC);                                \
-    arg1 = (uint8)(arg1 >> 1);                                    \
-    SET_NZ(arg1)
+/*
+ * ROR
+ * Rotate right.
+ */
+#define ROR \
+	arg1 |= (P & _pC) << 8; \
+	P = (P & ~_pC) | (arg1 & _pC); \
+	arg1 = (uint8)(arg1 >> 1); \
+	SET_NZ(arg1)
 
-/* 6280 ********************************************************
- *    RTI Return from interrupt
- *    pull flags, pull PC lo, pull PC hi and increment PC
- ***************************************************************/
-#define RTI                                                     \
-    PULL(P);                                                    \
-    PULL(PCL);                                                    \
-    PULL(PCH);                                                    \
-    CHECK_IRQ_LINES
+/*
+ * RTI
+ * Return from interrupt.
+ */
+#define RTI \
+	PULL(P); \
+	PULL(PCL); \
+	PULL(PCH); \
+	CHECK_IRQ_LINES
 
-/* 6280 ********************************************************
- *    RTS Return from subroutine
- *    pull PC lo, PC hi and increment PC
- ***************************************************************/
-#define RTS                                                     \
-    PULL(PCL);                                                    \
-    PULL(PCH);                                                    \
-    PCW++;                                                        \
+/*
+ * RTS
+ * Return from subroutine.
+ */
+#define RTS \
+	PULL(PCL); \
+	PULL(PCH); \
+	PCW++; \
 
-/* 6280 ********************************************************
- *  SAX Swap accumulator and index X
- ***************************************************************/
-#define SAX                                                     \
-    arg1 = X;                                                    \
-    X = A;                                                      \
-    A = arg1
+/*
+ * SBC
+ * Subtract with carry.
+ */
+#define SBC \
+	if(P & _pD) \
+	{ \
+		int c = (P & _pC) ^ _pC; \
+		int sum = A - arg1 - c; \
+		int lo = (A & 0x0f) - (arg1 & 0x0f) - c; \
+		int hi = (A & 0xf0) - (arg1 & 0xf0); \
+		P &= ~(_pV | _pC); \
+		if((A ^ arg1) & (A ^ sum) & _pN) \
+			P |= _pV; \
+		if (lo & 0xf0) \
+			lo -= 6; \
+		if (lo & 0x80) \
+			hi -= 0x10; \
+		if (hi & 0x0f00) \
+			hi -= 0x60; \
+		if ((sum & 0xff00) == 0) \
+			P |= _pC; \
+		A = (lo & 0x0f) + (hi & 0xf0); \
+	} \
+	else \
+	{ \
+	int c = (P & _pC) ^ _pC; \
+	int sum = A - arg1 - c; \
+		P &= ~(_pV | _pC); \
+		if ((A^arg1) & (A^sum) & _pN) \
+			P |= _pV; \
+		if ((sum & 0xff00) == 0) \
+			P |= _pC; \
+		A = (uint8) sum; \
+	} \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *  SAY Swap accumulator and index Y
- ***************************************************************/
-#define SAY                                                     \
-    arg1 = Y;                                                    \
-    Y = A;                                                      \
-    A = arg1
+/*
+ * SEC
+ * Set carry flag.
+ */
+#define SEC \
+	P |= _pC
 
-/* 6280 ********************************************************
- *    SBC Subtract with carry
- ***************************************************************/
-#define SBC                                                     \
-    if (P & _pD)                                                \
-    {                                                            \
-    int c = (P & _pC) ^ _pC;                                    \
-    int sum = A - arg1 - c;                                        \
-    int lo = (A & 0x0f) - (arg1 & 0x0f) - c;                     \
-    int hi = (A & 0xf0) - (arg1 & 0xf0);                         \
-        P &= ~(_pV | _pC);                                        \
-        if ((A^arg1) & (A^sum) & _pN)                            \
-            P |= _pV;                                            \
-        if (lo & 0xf0)                                            \
-            lo -= 6;                                            \
-        if (lo & 0x80)                                            \
-            hi -= 0x10;                                         \
-        if (hi & 0x0f00)                                        \
-            hi -= 0x60;                                         \
-        if ((sum & 0xff00) == 0)                                \
-            P |= _pC;                                            \
-        A = (lo & 0x0f) + (hi & 0xf0);                            \
-    }                                                            \
-    else                                                        \
-    {                                                            \
-    int c = (P & _pC) ^ _pC;                                    \
-    int sum = A - arg1 - c;                                        \
-        P &= ~(_pV | _pC);                                        \
-        if ((A^arg1) & (A^sum) & _pN)                            \
-            P |= _pV;                                            \
-        if ((sum & 0xff00) == 0)                                \
-            P |= _pC;                                            \
-        A = (uint8) sum;                                        \
-    }                                                            \
-    SET_NZ(A)
+/*
+ * SED
+ * Set decimal flag.
+ */
+#define SED \
+	P |= _pD
 
-/* 6280 ********************************************************
- *    SEC Set carry flag
- ***************************************************************/
-#define SEC                                                     \
-    P |= _pC
+/*
+ * SEI
+ * Set interrupt flag.
+ */
+#define SEI \
+	P |= _pI
 
-/* 6280 ********************************************************
- *    SED Set decimal flag
- ***************************************************************/
-#define SED                                                     \
-    P |= _pD
+/*
+ * SMB
+ * Set memory bit.
+ */
+#define SMB(bit) \
+	arg1 |= (1<<bit)
 
-/* 6280 ********************************************************
- *    SEI Set interrupt flag
- ***************************************************************/
-#define SEI                                                     \
-    P |= _pI
+/*
+ * STA
+ * Store accumulator.
+ */
+#define STA \
+	arg1 = A
 
-/* 6280 ********************************************************
- *  SET Set t flag
- *  T flag = Memory operation flag.
- *
- *  Instruction immediately after SET will use the byte in the zero
- *  page area indexed by X, if it is ADC, AND, ORA, EOR with an
- *  immediate operand.
- *
- *  Else, the function of the memory operation flag is ignored
- *  and the instruction executes like normal.
- *
- *  Other possible uses:
- *  Legendary Axe I/II (sed set sbc)
- *  Bravoman (set sbc)
- *  Magical Chase (set cpx)
- ***************************************************************/
+/*
+ * STX
+ * Store index X.
+ */
+#define STX \
+	arg1 = X
 
-#define SET                                                     \
-{                                                               \
-    int op, arg1;                                                \
-    op = RDOP(); /* Get next instruction */                     \
-    if((op & 0x9F) == 0x09)                                     \
-    {                                                           \
-        uint8 acc;                                              \
-        PCW++;                                                  \
-        arg1 = RDOPARG(); /* Immediate operand */                \
-        PCW++;                                                  \
-        acc = RDMEMZ(X); /* Used instead of accmulator */       \
-                                                                \
-        switch(op)                                              \
-        {                                                       \
-            case 0x09: acc = (uint8)(acc | arg1); break; /* ORA */ \
-            case 0x29: acc = (uint8)(acc & arg1); break; /* AND */ \
-            case 0x49: acc = (uint8)(acc ^ arg1); break; /* EOR */ \
-            case 0x69: /* ADC */                                \
-                if(P & _pD)                                     \
-                {                                               \
-                    int c = (P & _pC);                          \
-                    int lo = (acc & 0x0F) + (arg1 & 0x0F) + c;   \
-                    int hi = (acc & 0xF0) + (arg1 & 0xF0);       \
-                    P &= ~(_pV | _pC);                          \
-                    if(lo > 0x09) { hi += 0x10; lo += 0x06; };  \
-                    if(~(acc^arg1) & (acc^hi) & _pN) P |= _pV;   \
-                    if(hi > 0x90) hi += 0x60;                   \
-                    if(hi & 0xFF00) P |= _pC;                   \
-                    acc = (lo & 0x0F) + (hi & 0xF0);            \
-                }                                               \
-                else                                            \
-                {                                               \
-                    int c = (P & _pC);                          \
-                    int sum = acc + arg1 + c;                    \
-                    P &= ~(_pV | _pC);                          \
-                    if (~(acc^arg1) & (acc^sum) & _pN)           \
-                        P |= _pV;                               \
-                    if (sum & 0xff00)                           \
-                        P |= _pC;                               \
-                    acc = (uint8) sum;                          \
-                }                                               \
-                break;                                          \
-        }                                                       \
-                                                                \
-        SET_NZ(acc);        /* Update flags */                  \
-        WRMEMZ(X, acc);     /* Write result back */             \
-        pce_cpu->cycle_count -= 6;  /* Unsure of actual cycles used */  \
-    }                                                           \
-    P &= ~_pT;                                                  \
-}                                                               
+/*
+ * STY
+ * Store index Y.
+ */
+#define STY \
+	arg1 = Y
 
+/*
+ * STZ
+ * Store zero.
+ */
+#define STZ \
+	arg1 = 0
 
+/*
+ * TAX
+ * Transfer accumulator to X index.
+ */
+#define TAX \
+	X = A; \
+	SET_NZ(X)
 
+/*
+ * TAY
+ * Transfer accumulator to Y index.
+ */
+#define TAY \
+	Y = A; \
+	SET_NZ(Y)
 
-/* 6280 ********************************************************
- *  CSL Clock select low
- ***************************************************************/
-#define CSL             \
-    pce_cpu->speed = 0
+/*
+ * TRB
+ * Test bits and reset.
+ */
+#define TRB \
+	P = (P & ~(_pN | _pV | _pT | _pZ)) \
+		| ((arg1&0x80) ? _pN : 0) \
+		| ((arg1&0x40) ? _pV : 0) \
+		| ((arg1&A) ? 0 : _pZ); \
+	arg1 &= ~A
 
-/* 6280 ********************************************************
- *  CSL Clock select high
- ***************************************************************/
-#define CSH             \
-    pce_cpu->speed = 1    
+/*
+ * TSB
+ * Test bits and set.
+ */
+#define TSB \
+	P = (P & ~(_pN | _pV | _pT | _pZ)) \
+		| ((arg1 & 0x80) ? _pN : 0) \
+		| ((arg1 & 0x40) ? _pV : 0) \
+		| ((arg1 & A) ? 0 : _pZ); \
+	arg1 |= A
 
-/* 6280 ********************************************************
- *  SMB Set memory bit
- ***************************************************************/
-#define SMB(bit)                                                \
-    arg1 |= (1<<bit)
+/*
+ * TSX
+ * Transfer stack LSB to index X.
+ */
+#define TSX \
+	X = S; \
+	SET_NZ(X)
 
-/* 6280 ********************************************************
- *  ST0 Store at hardware address 0
- ***************************************************************/
-#define ST0                                                     \
-    pce_vdc_w(0x0000, arg1)
+/*
+ * TXA
+ * Transfer index X to accumulator.
+ */
+#define TXA \
+	A = X; \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *  ST1 Store at hardware address 2
- ***************************************************************/
-#define ST1                                                     \
-    pce_vdc_w(0x0002, arg1)
+/*
+ * TXS
+ * Transfer index X to stack LSB.
+ */
+#define TXS \
+	S = X
 
-/* 6280 ********************************************************
- *  ST2 Store at hardware address 3
- ***************************************************************/
-#define ST2                                                     \
-    pce_vdc_w(0x0003, arg1)
+/*
+ * TYA
+ * Transfer index Y to accumulator.
+ */
+#define TYA \
+	A = Y; \
+	SET_NZ(A)
 
-/* 6280 ********************************************************
- *    STA Store accumulator
- ***************************************************************/
-#define STA                                                     \
-    arg1 = A
+/* -------------------------------------------------------------------------- *
+ * HuC6280 instructions                                                       *
+ * -------------------------------------------------------------------------- */
 
-/* 6280 ********************************************************
- *    STX Store index X
- ***************************************************************/
-#define STX                                                     \
-    arg1 = X
+/*
+ * BSR
+ * Branch to subroutine.
+ */
+#define BSR \
+	PUSH(PCH); \
+	PUSH(PCL); \
+	pce_cpu->cycle_count -= 4; \
+	BRA(1) /* +4 cycles */
 
-/* 6280 ********************************************************
- *    STY Store index Y
- ***************************************************************/
-#define STY                                                     \
-    arg1 = Y
+/*
+ * CLA
+ * Clear accumulator.
+ */
+#define CLA \
+	A = 0
 
-/* 6280 ********************************************************
- * STZ  Store zero
- ***************************************************************/
-#define STZ                                                     \
-    arg1 = 0
+/*
+ * CLX
+ * Clear index X.
+ */
+#define CLX \
+	X = 0
 
-/* H6280 *******************************************************
- *  SXY Swap index X and index Y
- ***************************************************************/
-#define SXY                                                    \
-    arg1 = X;                                                   \
-    X = Y;                                                     \
-    Y = arg1
+/*
+ * CLY
+ * Clear index Y.
+ */
+#define CLY \
+	Y = 0
 
-/* H6280 *******************************************************
- *  TAI
- ***************************************************************/
-#define TAI                                                     \
-    from=RDMEMW(PCW);                                            \
-    to  =RDMEMW(PCW+2);                                            \
-    length=RDMEMW(PCW+4);                                        \
-    PCW+=6;                                                     \
-    alternate=0;                                                 \
-    while ((length--) != 0) {                                     \
-        WRMEM(to,RDMEM(from+alternate));                         \
-        to++;                                                     \
-        alternate ^= 1;                                         \
-    }                                                             \
-    pce_cpu->cycle_count-=(6 * length) + 17;
+/*
+ * CSH
+ * Clock select high (set speed to 7.16MHz)
+ */
+#define CSH \
+	debug("CPU speed changed to 7.16MHz"); \
+	pce_cpu->speed = 1
 
-/* H6280 *******************************************************
- *  TAM Transfer accumulator to memory mapper register(s)
- ***************************************************************/
+/*
+ * CSL
+ * Clock select low (set speed to 3.58MHz)
+ */
+#define CSL \
+	debug("CPU speed changed to 3.58MHz"); \
+	pce_cpu->speed = 0
 
-#define TAM                                                     \
-    if (arg1&0x01) pce_cpu->mmr[0] = A;                             \
-    if (arg1&0x02) pce_cpu->mmr[1] = A;                             \
-    if (arg1&0x04) pce_cpu->mmr[2] = A;                             \
-    if (arg1&0x08) pce_cpu->mmr[3] = A;                             \
-    if (arg1&0x10) pce_cpu->mmr[4] = A;                             \
-    if (arg1&0x20) pce_cpu->mmr[5] = A;                             \
-    if (arg1&0x40) pce_cpu->mmr[6] = A;                             \
-    if (arg1&0x80) pce_cpu->mmr[7] = A
+/*
+ * SAX
+ * Swap accumulator and index X.
+ */
+#define SAX \
+	arg1 = X; \
+	X = A; \
+	A = arg1
 
-/* 6280 ********************************************************
- *    TAX Transfer accumulator to index X
- ***************************************************************/
-#define TAX                                                     \
-    X = A;                                                        \
-    SET_NZ(X)
+/*
+ * SAY
+ * Swap accumulator and index Y.
+ */
+#define SAY \
+	arg1 = Y; \
+	Y = A; \
+	A = arg1
 
-/* 6280 ********************************************************
- *    TAY Transfer accumulator to index Y
- ***************************************************************/
-#define TAY                                                     \
-    Y = A;                                                        \
-    SET_NZ(Y)
+/*
+ * SET
+ * Set decimal memory operation flag.
+ * FIXME this need more investigation, still crashes.
+ */
+#define SET \
+{ \
+	debug("CPU SET instruction. Problem may occur!"); \
+	int op, arg1; \
+	 \
+	/* fetch instruction */ \
+	op = RDOP(); \
+	if((op & 0x9F) == 0x09) \
+	{ \
+		uint8 acc; \
+		PCW++; \
+		arg1 = RDOPARG(); \
+		PCW++; \
+		acc = RDMEMZ(X); \
+\
+		switch(op) \
+		{ \
+		case 0x09: /* ORA */ \
+			acc = (uint8)(acc | arg1); \
+			break; \
+		case 0x29: /* AND */ \
+			acc = (uint8)(acc & arg1); \
+			break; \
+		case 0x49: /* EOR */ \
+			acc = (uint8)(acc ^ arg1); \
+			break; \
+		case 0x69: /* ADC */ \
+			if(P & _pD) \
+			{ \
+				int c = (P & _pC); \
+				int lo = (acc & 0x0F) + (arg1 & 0x0F) + c; \
+				int hi = (acc & 0xF0) + (arg1 & 0xF0); \
+				P &= ~(_pV | _pC); \
+				if(lo > 0x09) \
+				{ \
+					hi += 0x10; \
+					lo += 0x06; \
+				} \
+				if(~(acc ^ arg1) & (acc ^ hi) & _pN) \
+					P |= _pV; \
+				if(hi > 0x90) \
+					hi += 0x60; \
+				if(hi & 0xFF00) \
+					P |= _pC; \
+				 \
+				acc = (lo & 0x0F) + (hi & 0xF0); \
+			} \
+			else \
+			{ \
+				int c = (P & _pC); \
+				int sum = acc + arg1 + c; \
+				P &= ~(_pV | _pC); \
+				if(~(acc ^ arg1) & (acc ^ sum) & _pN) \
+					P |= _pV; \
+				if(sum & 0xff00) \
+					P |= _pC; \
+				 \
+				acc = (uint8) sum; \
+			} \
+			break; \
+		} \
+\
+		/* update flags using `fake' accumulator */ \
+		SET_NZ(acc); \
+		WRMEMZ(X, acc); \
+		pce_cpu->cycle_count -= 8; \
+	} \
+	P &= ~_pT; \
+}
 
-/* 6280 ********************************************************
- *  TDD
- ***************************************************************/
-#define TDD                                                     \
-    from=RDMEMW(PCW);                                            \
-    to  =RDMEMW(PCW+2);                                            \
-    length=RDMEMW(PCW+4);                                        \
-    PCW+=6;                                                     \
-    while ((length--) != 0) {                                     \
-        WRMEM(to,RDMEM(from));                                     \
-        to--;                                                     \
-        from--;                                                    \
-    }                                                             \
-    pce_cpu->cycle_count-=(6 * length) + 17;
+/*
+ * SXY
+ * Swap indexes X and Y.
+ */
+#define SXY \
+	arg1 = X; \
+	X = Y; \
+	Y = arg1
 
-/* 6280 ********************************************************
- *  TIA
- ***************************************************************/
-#define TIA                                                     \
-    from=RDMEMW(PCW);                                            \
-    to  =RDMEMW(PCW+2);                                            \
-    length=RDMEMW(PCW+4);                                        \
-    PCW+=6;                                                     \
-    alternate=0;                                                 \
-    while ((length--) != 0) {                                     \
-        WRMEM(to+alternate,RDMEM(from));                        \
-        from++;                                                 \
-        alternate ^= 1;                                         \
-    }                                                             \
-    pce_cpu->cycle_count-=(6 * length) + 17;
+/*
+ * ST0
+ * Store at VDC address 1.
+ */
+#define ST0 \
+	pce_vdc_w(0x0000, arg1)
 
-/* 6280 ********************************************************
- *  TII
- ***************************************************************/
-#define TII                                                     \
-    from=RDMEMW(PCW);                                            \
-    to  =RDMEMW(PCW+2);                                            \
-    length=RDMEMW(PCW+4);                                        \
-    PCW+=6;                                                     \
-    while ((length--) != 0) {                                     \
-        WRMEM(to,RDMEM(from));                                     \
-        to++;                                                     \
-        from++;                                                    \
-    }                                                             \
-    pce_cpu->cycle_count-=(6 * length) + 17;
+/*
+ * ST1
+ * Store at VDC address 2.
+ */
+#define ST1 \
+	pce_vdc_w(0x0002, arg1)
 
-/* 6280 ********************************************************
- *  TIN Transfer block, source increments every loop
- ***************************************************************/
-#define TIN                                                     \
-    from=RDMEMW(PCW);                                            \
-    to  =RDMEMW(PCW+2);                                            \
-    length=RDMEMW(PCW+4);                                        \
-    PCW+=6;                                                     \
-    while ((length--) != 0) {                                     \
-        WRMEM(to,RDMEM(from));                                     \
-        from++;                                                    \
-    }                                                             \
-    pce_cpu->cycle_count-=(6 * length) + 17;
+/*
+ * ST2
+ * Store at VDC address 3.
+ */
+#define ST2 \
+	pce_vdc_w(0x0003, arg1)
 
-/* 6280 ********************************************************
- *  TMA Transfer memory mapper register(s) to accumulator
- *  the highest bit set in arg1 is the one that counts
- ***************************************************************/
-#define TMA                                                     \
-    if (arg1&0x01) A = pce_cpu->mmr[0];                             \
-    else                                                        \
-    if (arg1&0x02) A = pce_cpu->mmr[1];                             \
-    else                                                        \
-    if (arg1&0x04) A = pce_cpu->mmr[2];                             \
-    else                                                        \
-    if (arg1&0x08) A = pce_cpu->mmr[3];                             \
-    else                                                        \
-    if (arg1&0x10) A = pce_cpu->mmr[4];                             \
-    else                                                        \
-    if (arg1&0x20) A = pce_cpu->mmr[5];                             \
-    else                                                        \
-    if (arg1&0x40) A = pce_cpu->mmr[6];                             \
-    else                                                        \
-    if (arg1&0x80) A = pce_cpu->mmr[7]
+/*
+ * TAI
+ * Alternate source address and source address + 1 (???)
+ */
+#define TAI \
+	from = RDMEMW(PCW); \
+	to = RDMEMW(PCW + 2); \
+	length = RDMEMW(PCW + 4); \
+	PCW += 6; \
+	alternate = 0; \
+	while ((length--) != 0) \
+	{ \
+		WRMEM(to, RDMEM(from + alternate)); \
+		to++; \
+		alternate ^= 1; \
+	} \
+	pce_cpu->cycle_count-=(6 * length) + 17;
 
-/* 6280 ********************************************************
- * TRB  Test and reset bits
- ***************************************************************/
-#define TRB                                                       \
-    P = (P & ~(_pN|_pV|_pT|_pZ))                                \
-        | ((arg1&0x80) ? _pN:0)                                    \
-        | ((arg1&0x40) ? _pV:0)                                    \
-        | ((arg1&A)  ? 0:_pZ);                                    \
-    arg1 &= ~A
+/*
+ * TAM
+ * Transfer accumulator to MMR registers.
+ */
+#define TAM \
+	if (arg1&0x01) pce_cpu->mmr[0] = A; \
+	if (arg1&0x02) pce_cpu->mmr[1] = A; \
+	if (arg1&0x04) pce_cpu->mmr[2] = A; \
+	if (arg1&0x08) pce_cpu->mmr[3] = A; \
+	if (arg1&0x10) pce_cpu->mmr[4] = A; \
+	if (arg1&0x20) pce_cpu->mmr[5] = A; \
+	if (arg1&0x40) pce_cpu->mmr[6] = A; \
+	if (arg1&0x80) pce_cpu->mmr[7] = A
 
-/* 6280 ********************************************************
- * TSB  Test and set bits
- ***************************************************************/
-#define TSB                                                     \
-    P = (P & ~(_pN|_pV|_pT|_pZ))                                \
-        | ((arg1&0x80) ? _pN:0)                                    \
-        | ((arg1&0x40) ? _pV:0)                                    \
-        | ((arg1&A)  ? 0:_pZ);                                    \
-    arg1 |= A
+/*
+ * TDD
+ * Transfer from decrementing to decrementing (???).
+ */
+#define TDD \
+	from = RDMEMW(PCW); \
+	to = RDMEMW(PCW + 2); \
+	length = RDMEMW(PCW + 4); \
+	PCW += 6; \
+	while((length--) != 0) \
+	{ \
+		WRMEM(to, RDMEM(from)); \
+		to--; \
+		from--; \
+	} \
+	pce_cpu->cycle_count-=(6 * length) + 17;
 
-/* 6280 ********************************************************
- *    TSX Transfer stack LSB to index X
- ***************************************************************/
-#define TSX                                                     \
-    X = S;                                                        \
-    SET_NZ(X)
+/*
+ * TIA
+ * Transfer from incrementing to alternating (???).
+ */
+#define TIA \
+	from = RDMEMW(PCW); \
+	to = RDMEMW(PCW + 2); \
+	length = RDMEMW(PCW + 4); \
+	PCW += 6; \
+	alternate = 0; \
+	while((length--) != 0) \
+	{ \
+		WRMEM(to+alternate, RDMEM(from)); \
+		from++; \
+		alternate ^= 1; \
+	} \
+	pce_cpu->cycle_count -= (6 * length) + 17;
 
-/* 6280 ********************************************************
- *    TST
- ***************************************************************/
-#define TST                                                        \
-    P = (P & ~(_pN|_pV|_pT|_pZ))                                \
-        | ((arg2&0x80) ? _pN:0)                                    \
-        | ((arg2&0x40) ? _pV:0)                                    \
-        | ((arg2&arg1)  ? 0:_pZ)
+/*
+ * TII
+ * Transfer from incrementing to incrementing (???)
+ */
+#define TII \
+	from = RDMEMW(PCW); \
+	to = RDMEMW(PCW + 2); \
+	length = RDMEMW(PCW + 4); \
+	PCW += 6; \
+	while((length--) != 0) \
+	{ \
+		WRMEM(to, RDMEM(from)); \
+		to++; \
+		from++; \
+	} \
+	pce_cpu->cycle_count -= (6 * length) + 17;
 
-/* 6280 ********************************************************
- *    TXA Transfer index X to accumulator
- ***************************************************************/
-#define TXA                                                     \
-    A = X;                                                        \
-    SET_NZ(A)
+/*
+ * TIN
+ * Transfer from incrementing to does nothing (???)
+ */
+#define TIN \
+	from = RDMEMW(PCW); \
+	to = RDMEMW(PCW + 2); \
+	length = RDMEMW(PCW + 4); \
+	PCW += 6; \
+	while((length--) != 0) \
+	{ \
+		WRMEM(to,RDMEM(from)); \
+		from++; \
+	} \
+	pce_cpu->cycle_count-=(6 * length) + 17;
 
-/* 6280 ********************************************************
- *    TXS Transfer index X to stack LSB
- *    no flags changed (sic!)
- ***************************************************************/
-#define TXS                                                     \
-    S = X
+/*
+ * TMA
+ * Transfer MMR registers to accumulator, highest bit wins.
+ */
+#define TMA \
+	if(arg1&0x01) \
+		A = pce_cpu->mmr[0]; \
+	else if(arg1&0x02) \
+		A = pce_cpu->mmr[1]; \
+	else if(arg1&0x04) \
+		A = pce_cpu->mmr[2]; \
+	else if(arg1&0x08) \
+		A = pce_cpu->mmr[3]; \
+	else if(arg1&0x10) \
+		A = pce_cpu->mmr[4]; \
+	else if(arg1&0x20) \
+		A = pce_cpu->mmr[5]; \
+	else if(arg1&0x40) \
+		A = pce_cpu->mmr[6]; \
+	else if(arg1&0x80) \
+		A = pce_cpu->mmr[7]
 
-/* 6280 ********************************************************
- *    TYA Transfer index Y to accumulator
- ***************************************************************/
-#define TYA                                                     \
-    A = Y;                                                        \
-    SET_NZ(A)
+/*
+ * TST
+ * Test bits.
+ */
+#define TST \
+	P = (P & ~(_pN | _pV | _pT | _pZ)) \
+		| ((arg2 & 0x80) ? _pN : 0) \
+		| ((arg2 & 0x40) ? _pV : 0) \
+		| ((arg2 & arg1) ? 0 : _pZ)
 
 #endif /* __PCE_CPU_OP_H */
 // vim: ft=cpp

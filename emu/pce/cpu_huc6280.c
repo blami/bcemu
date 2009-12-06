@@ -524,7 +524,7 @@ static int pce_cpu_iopage_r(int addr)
 		break;
 	}
 
-	debug("CPU UNKNOWN iopage/read %04X (PC:%08X)", addr,
+	debug("CPU UNKNOWN iopage/read %04x (pc=%04x)", addr,
 		pce_cpu_reg_r(CPU_PC));
 	return (0x00);
 }
@@ -587,7 +587,7 @@ static void pce_cpu_iopage_w(int addr, int data)
 		break;
 	}
 
-	debug("CPU UNKNOWN iopage/write %02X: %04X (PC:%08X)", data, addr,
+	debug("CPU UNKNOWN iopage/write %02x: %04x (pc=%04x)", data, addr,
 		pce_cpu_reg_r(CPU_PC));
 }
 
@@ -622,7 +622,7 @@ int pce_cpu_mem_r(int addr)
 	if(page == 0xFF)
 		return pce_cpu_iopage_r(addr & 0x1FFF);
 
-	debug("CPU UNKNOWN mem/read %02X:%04X (PC:%08X)", page, addr & 0x1FFFF,
+	debug("CPU UNKNOWN mem/read %02x:%04x (pc=%08x)", page, addr & 0x1FFFF,
 		pce_cpu_reg_r(CPU_PC));
 	return (0xFF);
 }
@@ -654,6 +654,6 @@ void pce_cpu_mem_w(int addr, int data)
 		return;
 	}
 
-	debug("CPU UNKNOWN mem/write %02X: %02X:%04X (PC:%08X)", data, page,
+	debug("CPU UNKNOWN mem/write %02x: %02x:%04x (pc=%04x)", data, page,
 		addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 }

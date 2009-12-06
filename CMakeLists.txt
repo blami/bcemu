@@ -11,7 +11,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 PROJECT(bc_emu C)
-SET(CODENAME "cinnamon")
+SET(CODENAME "mai_kasahara")
 
 ########################################################################
 #                               MODULES                                #

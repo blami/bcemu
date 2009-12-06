@@ -141,4 +141,16 @@ void pce_frame()
 
 		pce_vdc->y_offset = (pce_vdc->y_offset + 1) & pce_vdc->buf_col_mask;
 	}
+
+	pce_psg_fill(emu_audio->buffer[0], emu_audio->buffer[1],
+		emu_audio->buffer_size);
+
+	/*
+	int i;
+	for(i = 0; i < emu_audio->buffer_size; i++)
+	{
+		printf("%x", emu_audio->buffer[0][i]);
+	}
+	getchar();
+	*/
 }

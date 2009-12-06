@@ -453,15 +453,12 @@ static void pce_cpu_timer_w(int offset, int data)
 
 /**
  * Input port write.
- * FIXME
  * \param data          data to be written to input port
  */
 static void pce_cpu_input_w(uint8 data)
 {
-	/*
-	joy_sel = (data & 1);
-	joy_clr = (data >> 1) & 1;
-	*/
+	pce_cpu->input_sel = (data & 1);
+	pce_cpu->input_clr = (data >> 1) & 1;
 }
 
 /**
@@ -471,23 +468,22 @@ static void pce_cpu_input_w(uint8 data)
  */
 static uint8 pce_cpu_input_r()
 {
-	uint8 temp = 0xFF;
+	uint8 data = 0xFF;
 
-	/* decode data and setup masks */
-	/*
-	if(input.pad[joy_cnt] & INPUT_LEFT)   temp &= ~0x80;
-	if(input.pad[joy_cnt] & INPUT_DOWN)   temp &= ~0x40;
-	if(input.pad[joy_cnt] & INPUT_RIGHT)  temp &= ~0x20;
-	if(input.pad[joy_cnt] & INPUT_UP)     temp &= ~0x10;
-	if(input.pad[joy_cnt] & INPUT_RUN)    temp &= ~0x08;
-	if(input.pad[joy_cnt] & INPUT_SELECT) temp &= ~0x04;
-	if(input.pad[joy_cnt] & INPUT_B2)     temp &= ~0x02;
-	if(input.pad[joy_cnt] & INPUT_B1)     temp &= ~0x01;
+	/* FIXME this is temporary, should be rewritten soon */
+	if(emu_input->button[0][INPUT_UP])      data &= ~0x10;
+	if(emu_input->button[0][INPUT_DOWN])    data &= ~0x40;
+	if(emu_input->button[0][INPUT_LEFT])    data &= ~0x80;
+	if(emu_input->button[0][INPUT_RIGHT])   data &= ~0x20;
+	if(emu_input->button[0][INPUT_START])   data &= ~0x08;
+	if(emu_input->button[0][INPUT_BUTTON1]) data &= ~0x01;
+	if(emu_input->button[0][INPUT_BUTTON2]) data &= ~0x02;
 
-	if(joy_sel & 1) temp >>= 4;
-	temp &= 0x0F;
-	*/
-	return temp;
+	if(pce_cpu->input_sel & 1)
+		data >>= 4;
+
+	data &= 0x0F;
+	return data;
 }
 
 

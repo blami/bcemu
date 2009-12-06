@@ -23,12 +23,16 @@
  */
 typedef struct
 {
-	SDL_Surface* screen;        /* surface tied with screen (back buffer) */
-	SDL_Surface* buffer;        /* drawing buffer */
+	SDL_Surface* screen;        /**< surface tied with screen (back buffer) */
+	SDL_Surface* buffer;        /**< drawing buffer */
 
-	
+	int16* audio_buf_l;
+	int16* audio_buf_r;
+	int16* audio_pos_l;
+	int16* audio_pos_r;
+	int audio_len;
 
-	SDL_Event event;            /* input event */
+	SDL_Event event;            /**< input event */
 
 } t_sdl;
 

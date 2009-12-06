@@ -73,7 +73,7 @@ void pce_psg_w(uint16 addr, uint8 data)
 {
 	assert(pce_psg);
 
-	//debug("PSG write: addr=%08x msb=%d data=%d", addr, msb, data);
+	//debug("PSG write: addr=%08x data=%d", addr, data);
 
 	switch(addr)
 	{
@@ -127,9 +127,12 @@ void pce_psg_w(uint16 addr, uint8 data)
  * \param buf_r         right channel output buffer
  * \param length        length of requested data in samples
  */
-void pce_psg_fillbuf(int16 *buf_l, int16 *buf_r, int length)
+void pce_psg_fill(int16 *buf_l, int16 *buf_r, int length)
 {
 	assert(pce_psg);
+	assert(buf_l && buf_r);
+
+	//debug("PSG fill buffers size=%d", length);
 
 	while(length > 0)
 	{
@@ -141,7 +144,7 @@ void pce_psg_fillbuf(int16 *buf_l, int16 *buf_r, int length)
 
 		/* skip channels 0,1 if LFO (low frequency oscillator) is enabled */
 		first_ch = ((pce_psg->lfo_ctrl & 3) == 0)
-			? 0 : 2;
+			? 2 : 2;
 		/* skip channels 4,5 if white noise is enabled */
 		last_ch = (pce_psg->noise & 0x80)
 			? 4 : 6;
@@ -166,7 +169,7 @@ void pce_psg_fillbuf(int16 *buf_l, int16 *buf_r, int length)
 			/* generate samples */
 
 			/* largest step (PSG clock / lenght of waveform) */
-			int step_base = (3580000 / 32);
+			int step_base = (3580000 / 32) * 2; /* *2 just sounds better */
 			/* current step (avoid division by zero) */
 			int step = (pce_psg->ch[ch].freq != 0)
 				? step_base / pce_psg->ch[ch].freq : 0;
@@ -188,6 +191,8 @@ void pce_psg_fillbuf(int16 *buf_l, int16 *buf_r, int length)
 
 		if(sample[1] & 0x8000)
 			sample[1] ^= 0x8000;
+
+		//debug("PSG: sample_l=%d, sample_r=%d", sample[0], sample[1]);
 
 		*buf_l++ = sample[0];
 		*buf_r++ = sample[1];

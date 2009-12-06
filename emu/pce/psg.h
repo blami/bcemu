@@ -65,7 +65,7 @@ extern void     pce_psg_reset();
 extern void     pce_psg_shutdown();
 
 extern void     pce_psg_w(uint16, uint8);
-extern void     pce_psg_fillbuf(int16*, int16*, int);
+extern void     pce_psg_fill(int16*, int16*, int);
 
 #endif /* __PCE_PSG_H */
 

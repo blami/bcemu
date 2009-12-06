@@ -46,6 +46,10 @@ typedef struct
 	int timer_value;            /**< timer interrupt */
 	int timer_load;             /**< reload value */
 
+	/* input port */
+	uint8 input_sel;            /**< input port select */
+	uint8 input_clr;            /**< input port clear */
+
 	int speed;                  /**< current CPU speed (0:3.58MHz, 1:7.16MHz)*/
 	int cycle_count;            /**< cycle count */
 

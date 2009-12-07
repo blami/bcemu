@@ -788,7 +788,7 @@
 
 /*
  * SXY
- * Swap indexes X and Y.
+ * Swap index registers X and Y.
  */
 #define SXY \
 	arg1 = X; \
@@ -818,7 +818,7 @@
 
 /*
  * TAI
- * Alternate source address and source address + 1 (???)
+ * Transfer 'alternate' increment.
  */
 #define TAI \
 	from = RDMEMW(PCW); \
@@ -839,18 +839,18 @@
  * Transfer accumulator to MMR registers.
  */
 #define TAM \
-	if (arg1&0x01) pce_cpu->mmr[0] = A; \
-	if (arg1&0x02) pce_cpu->mmr[1] = A; \
-	if (arg1&0x04) pce_cpu->mmr[2] = A; \
-	if (arg1&0x08) pce_cpu->mmr[3] = A; \
-	if (arg1&0x10) pce_cpu->mmr[4] = A; \
-	if (arg1&0x20) pce_cpu->mmr[5] = A; \
-	if (arg1&0x40) pce_cpu->mmr[6] = A; \
-	if (arg1&0x80) pce_cpu->mmr[7] = A
+	if(arg1 & 0x01) pce_cpu->mmr[0] = A; \
+	if(arg1 & 0x02) pce_cpu->mmr[1] = A; \
+	if(arg1 & 0x04) pce_cpu->mmr[2] = A; \
+	if(arg1 & 0x08) pce_cpu->mmr[3] = A; \
+	if(arg1 & 0x10) pce_cpu->mmr[4] = A; \
+	if(arg1 & 0x20) pce_cpu->mmr[5] = A; \
+	if(arg1 & 0x40) pce_cpu->mmr[6] = A; \
+	if(arg1 & 0x80) pce_cpu->mmr[7] = A
 
 /*
  * TDD
- * Transfer from decrementing to decrementing (???).
+ * Transfer 'from' decrement 'to' decrement.
  */
 #define TDD \
 	from = RDMEMW(PCW); \
@@ -867,7 +867,7 @@
 
 /*
  * TIA
- * Transfer from incrementing to alternating (???).
+ * Transfer 'from' increment 'to' alternate.
  */
 #define TIA \
 	from = RDMEMW(PCW); \
@@ -877,7 +877,7 @@
 	alternate = 0; \
 	while((length--) != 0) \
 	{ \
-		WRMEM(to+alternate, RDMEM(from)); \
+		WRMEM(to + alternate, RDMEM(from)); \
 		from++; \
 		alternate ^= 1; \
 	} \
@@ -885,7 +885,7 @@
 
 /*
  * TII
- * Transfer from incrementing to incrementing (???)
+ * Transfer 'from' increment 'to' increment.
  */
 #define TII \
 	from = RDMEMW(PCW); \
@@ -902,7 +902,7 @@
 
 /*
  * TIN
- * Transfer from incrementing to does nothing (???)
+ * Transfer 'from' increment 'to' does nothing.
  */
 #define TIN \
 	from = RDMEMW(PCW); \
@@ -921,21 +921,21 @@
  * Transfer MMR registers to accumulator, highest bit wins.
  */
 #define TMA \
-	if(arg1&0x01) \
+	if(arg1 & 0x01) \
 		A = pce_cpu->mmr[0]; \
-	else if(arg1&0x02) \
+	else if(arg1 & 0x02) \
 		A = pce_cpu->mmr[1]; \
-	else if(arg1&0x04) \
+	else if(arg1 & 0x04) \
 		A = pce_cpu->mmr[2]; \
-	else if(arg1&0x08) \
+	else if(arg1 & 0x08) \
 		A = pce_cpu->mmr[3]; \
-	else if(arg1&0x10) \
+	else if(arg1 & 0x10) \
 		A = pce_cpu->mmr[4]; \
-	else if(arg1&0x20) \
+	else if(arg1 & 0x20) \
 		A = pce_cpu->mmr[5]; \
-	else if(arg1&0x40) \
+	else if(arg1 & 0x40) \
 		A = pce_cpu->mmr[6]; \
-	else if(arg1&0x80) \
+	else if(arg1 & 0x80) \
 		A = pce_cpu->mmr[7]
 
 /*

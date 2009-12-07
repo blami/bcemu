@@ -28,8 +28,8 @@ typedef struct
 	pair zp;                    /**< zero page address */
 	pair ea;                    /**< effective address */
 	uint8 a;                    /**< accumulator */
-	uint8 x;                    /**< X index register (general purpose) */
-	uint8 y;                    /**< Y index register (general purpose) */
+	uint8 x;                    /**< X index register */
+	uint8 y;                    /**< Y index register */
 	uint8 p;                    /**< status */
 	uint8 mmr[8];               /**< memory mapper */
 
@@ -110,11 +110,11 @@ typedef struct
 /*
  * Interrupt vectors.
  */
-#define INT_VEC_RESET   0xfffe
-#define INT_VEC_NMI     0xfffc
-#define INT_VEC_TIMER   0xfffa
-#define INT_VEC_IRQ1    0xfff8
-#define INT_VEC_IRQ2    0xfff6
+#define INT_VEC_RESET   0xFFFE
+#define INT_VEC_NMI     0xFFFC
+#define INT_VEC_TIMER   0xFFFA
+#define INT_VEC_IRQ1    0xFFF8
+#define INT_VEC_IRQ2    0xFFF6
 
 /**
  * Register names.

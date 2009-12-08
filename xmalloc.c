@@ -26,6 +26,7 @@
 
 /* xmalloc.c: Memory allocation wrappers. */
 
+#include "bc_emu.h"             /* DEBUG */
 #include "debug.h"
 #include <malloc.h>
 #include <string.h>
@@ -115,6 +116,7 @@ xstrdup(const char* s)
 	if(!(n_s = strcpy(n_s, s)))
 		fatal("strcpy() failed!");
 
+	/* terminate string */
 	n_s[strlen(s)] = '\0';
 
 	return n_s;
@@ -142,7 +144,10 @@ xstrndup(const char* s, size_t n)
 	if(!(n_s = strncpy(n_s, s, n)))
 		fatal("strncpy() failed!");
 
-	n_s[n + 1] = '\0';
+	/* terminate string */
+	n_s[n] = '\0';
+
+	debug("[%s][%s]", s, n_s);
 
 	return n_s;
 }

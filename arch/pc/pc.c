@@ -103,15 +103,24 @@ static t_rom* pc_load_rom(const char* filename)
 	FILE* f = NULL;
 	int size;
 
-	debug("loading ROM image: %s", filename);
+	debug("loading ROM image: `%s'", filename);
 
+#ifndef WIN32
 	if(!(f = fopen(filename, "r")))
+#else
+	/* Win32 differentiate between text and binary file descriptors */
+	if(!(f = fopen(filename, "rb")))
+#endif /* WIN32 */
+	{
+		ferror(f);
 		return NULL;
+	}
 
 	/* get file size, portable way (ANSI C) */
 	if(fseek(f, 0, SEEK_END) != 0)
 	{
 		debug("couldn't seek to file end");
+		ferror(f);
 		fclose(f);
 		return NULL;
 	}
@@ -123,6 +132,7 @@ static t_rom* pc_load_rom(const char* filename)
 	if(fseek(f, 0, SEEK_SET) != 0)
 	{
 		debug("couldn't seek back to file begin");
+		ferror(f);
 		fclose(f);
 		return NULL;
 	}
@@ -132,6 +142,7 @@ static t_rom* pc_load_rom(const char* filename)
 	{
 		debug("couldn't read ROM image file `%s' contents, possibly corrupted",
 			filename);
+		ferror(f);
 		fclose(f);
 		return NULL;
 	}
@@ -200,6 +211,7 @@ int main(int argc, char** argv)
 				break;
 
 			case 1:
+				debug("%s %d", xoptarg, strlen(xoptarg));
 				pc_rom_file = xstrndup(xoptarg, strlen(xoptarg));
 				break;
 		}
@@ -213,11 +225,11 @@ int main(int argc, char** argv)
 	}
 
 	/* put ROM image file to memory (doesn't bother 2nd and 3rd gen images are
-	 * around 15M max. */
+	 * around 15M max.) */
 	emu_rom = pc_load_rom(pc_rom_file);
 	if(!emu_rom)
 	{
-		fprintf(stderr, "%s: couldn't load ROM image from file: %s\n",
+		fprintf(stderr, "%s: couldn't load ROM image from file: `%s'\n",
 			emu_progname,
 			pc_rom_file);
 		exit(EXIT_FAILURE);

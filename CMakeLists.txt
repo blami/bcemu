@@ -38,7 +38,7 @@ SET(FLAGS
 )
 
 # include directories:
-SET(INCLUDES ${CMAKE_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 ########################################################################
 #                        CONFIGURATION OPTIONS                         #
@@ -115,7 +115,7 @@ IF(EMU_PCE)
 		emu/pce/psg.c
 		emu/pce/rom.c
 	)
-	SET(LIBS ${LIBS} emu_pce)
+	SET(LIBS ${LIBS} ${SDL_LIBRARY} emu_pce)
 ENDIF(EMU_PCE)
 
 
@@ -129,8 +129,7 @@ IF(UI_SDL AND (ARCH STREQUAL "pc"))
 	ADD_LIBRARY(ui_sdl STATIC
 		ui/sdl/sdl_main.c
 	)
-	SET(LIBS ${LIBS} ui_sdl ${MINGW32_LIBRARY} ${SDLMAIN_LIBRARY} ${SDL_LIBRARY})
-	SET(INCLUDES ${INCLUDES} ${SDL_INCLUDE_DIR})
+	SET(LIBS ${LIBS} ${SDL_LIBRARY} ui_sdl)
 ELSEIF(UI_SDL AND NOT (ARCH STREQUAL "pc"))
 	MESSAGE(WARNING "SDL not supported on this architecture. Disabled.")
 ENDIF(UI_SDL AND (ARCH STREQUAL "pc"))
@@ -153,9 +152,6 @@ CONFIGURE_FILE(
 ########################################################################
 #                             EXECUTABLE                               #
 ########################################################################
-# Includes:
-INCLUDE_DIRECTORIES(${INCLUDES})
-
 # Final executable:
 LINK_LIBRARIES(${LIBS})
 

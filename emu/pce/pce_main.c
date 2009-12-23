@@ -100,11 +100,9 @@ void pce_frame()
 				pce_cpu_set_irq_line(0, ASSERT_LINE);
 			}
 
-		/* vertical blanking */
+		/* VSYNC */
 		if(line == 240)
 		{
-			//debug("PCE vertical blank");
-
 			/* DVSRR or DCR is set, DMA write */
 			if(pce_vdc->dvssr || pce_vdc->reg[0x0F] & 0x10)
 			{
@@ -113,10 +111,10 @@ void pce_frame()
 				/* DMA transfer VRAM to SATB */
 				memcpy(pce->satb, &pce->vram[(pce_vdc->reg[0x13] << 1) & 0xFFFE],
 					0x200);
-
-				/* DMA transfer done IRQ */
+				/* DMA transfer VRAM to SATB done IRQ (if enabled) */
 				if(pce_vdc->reg[0x0F] & 0x01)
 				{
+					//debug("PCE vram to satb dma complete interrupt");
 					pce_vdc->status |= VDC_DS;
 					pce_cpu_set_irq_line(0, ASSERT_LINE);
 				}
@@ -128,11 +126,13 @@ void pce_frame()
 			/* cause vertical blank interrupt */
 			if(pce_vdc->reg[0x05] & 0x0008)
 			{
+				//debug("PCE vblank interrupt");
 				pce_vdc->status |= VDC_VD;
 				pce_cpu_set_irq_line(0, ASSERT_LINE);
 			}
 		}
 
+		/* HSYNC */
 		/* at 7.16MHz we have 455 cycles per line window */
 		pce_cpu_exec(455);
 

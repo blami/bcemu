@@ -2,7 +2,7 @@
  * bc_emu: portable video game emulator                                       *
  * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>                      *
  * Copyright © 1998-2000 Juergen Buchmueller                                  *
- * Copyright © 2006 Mark Ormston
+ * Copyright © 2006 Mark Ormston                                              *
  * http://www.blami.net/prj/bc_emu                                            *
  *                                                                            *
  * This is free software licensed under MIT license. See LICENSE.             *
@@ -97,7 +97,7 @@
  * \param addr          address to be read
  */
 #define RDMEM(addr) \
-	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) | \
+	pce_cpu_mem_r((pce_cpu->mpr[(addr) >> 13] << 13) | \
 		((addr) & 0x1fff))
 
 /**
@@ -106,7 +106,7 @@
  * \param data          data
  */
 #define WRMEM(addr,data) \
-	pce_cpu_mem_w((pce_cpu->mmr[(addr) >> 13] << 13) | \
+	pce_cpu_mem_w((pce_cpu->mpr[(addr) >> 13] << 13) | \
 		((addr) & 0x1fff), data);
 
 /**
@@ -114,7 +114,7 @@
  * \param addr          address to be read
  */
 #define RDMEMZ(addr) \
-	pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff));
+	pce_cpu_mem_r((pce_cpu->mpr[1] << 13) | ((addr) & 0x1fff));
 
 /**
  * Write zero-page memory.
@@ -122,7 +122,7 @@
  * \param data          data
  */
 #define WRMEMZ(addr,data) \
-	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff), \
+	pce_cpu_mem_w((pce_cpu->mpr[1] << 13) | ((addr) & 0x1fff), \
 		data);
 
 /**
@@ -130,10 +130,10 @@
  * \param addr          address to be read
  */
 #define RDMEMW(addr) \
-	pce_cpu_mem_r((pce_cpu->mmr[(addr) >> 13] << 13) | \
+	pce_cpu_mem_r((pce_cpu->mpr[(addr) >> 13] << 13) | \
 		((addr) & 0x1fff)) \
 	| \
-	(pce_cpu_mem_r((pce_cpu->mmr[(addr+1) >> 13] << 13) | \
+	(pce_cpu_mem_r((pce_cpu->mpr[(addr+1) >> 13] << 13) | \
 		((addr + 1) & 0x1fff)) << 8)
 
 /**
@@ -143,11 +143,11 @@
 #define RDZPWORD(addr) \
 	((addr & 0xff) == 0xff) ? \
 		/* handle corner cases */ \
-		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr) & 0x1fff)) \
-		+ (pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr - 0xff) & 0x1fff)) << 8) \
+		pce_cpu_mem_r((pce_cpu->mpr[1] << 13) | ((addr) & 0x1fff)) \
+		+ (pce_cpu_mem_r((pce_cpu->mpr[1] << 13) | ((addr - 0xff) & 0x1fff)) << 8) \
 		: \
-		pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | ((addr)&0x1fff)) \
-		+ (pce_cpu_mem_r( (pce_cpu->mmr[1] << 13) | ((addr+1)&0x1fff))<<8)
+		pce_cpu_mem_r((pce_cpu->mpr[1] << 13) | ((addr)&0x1fff)) \
+		+ (pce_cpu_mem_r( (pce_cpu->mpr[1] << 13) | ((addr+1)&0x1fff))<<8)
 
 /* -------------------------------------------------------------------------- *
  * Stack helpers                                                              *
@@ -158,7 +158,7 @@
  * \param reg           pushed register
  */
 #define PUSH(reg) \
-	pce_cpu_mem_w((pce_cpu->mmr[1] << 13) | pce_cpu->sp.d, reg); \
+	pce_cpu_mem_w((pce_cpu->mpr[1] << 13) | pce_cpu->sp.d, reg); \
 	S--
 
 /**
@@ -167,7 +167,7 @@
  */
 #define PULL(reg) \
 	S++; \
-	reg = pce_cpu_mem_r((pce_cpu->mmr[1] << 13) | pce_cpu->sp.d)
+	reg = pce_cpu_mem_r((pce_cpu->mpr[1] << 13) | pce_cpu->sp.d)
 
 /* -------------------------------------------------------------------------- *
  * Opcode fetch helpers                                                       *
@@ -177,13 +177,13 @@
  * Read (fetch) opcode from memory at PC address.
  */
 #define RDOP() \
-	pce_cpu_mem_r((pce_cpu->mmr[PCW>>13] << 13) | (PCW & 0x1fff))
+	pce_cpu_mem_r((pce_cpu->mpr[PCW>>13] << 13) | (PCW & 0x1fff))
 
 /**
  * Read (fetch) opcode argument from memory at PC address.
  */
 #define RDOPARG() \
-	pce_cpu_mem_r((pce_cpu->mmr[PCW>>13] << 13) | (PCW&0x1fff))
+	pce_cpu_mem_r((pce_cpu->mpr[PCW>>13] << 13) | (PCW&0x1fff))
 
 /* -------------------------------------------------------------------------- *
  * Branch helpers                                                             *

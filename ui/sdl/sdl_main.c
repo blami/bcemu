@@ -76,8 +76,14 @@ int sdl_init()
 		sdl->screen->format->Bmask,
 		sdl->screen->format->Amask);
 
+	debug("SDL pixelformat: r<<%d g<<%d b<<%d",
+		sdl->screen->format->Rshift,
+		sdl->screen->format->Gshift,
+		sdl->screen->format->Bshift);
+
+
 	/* FIXME filthy */
-	emu_video->pixeldata = (uint8 *)&sdl->buffer->pixels[0];
+	//emu_video->pixeldata = (uint8 *)&sdl->buffer->pixels[0];
 
 	/* TODO configuration file section `ui.[sdl.]keyrepeat */
 	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -121,9 +127,11 @@ void sdl_update_audio()
 {
 	//memset(emu_audio->buffer[1], 10000, emu_audio->buffer_size);
 	sdl->audio_buf_l = emu_audio->buffer[0];
-	sdl->audio_buf_r = emu_audio->buffer[0];
+	sdl->audio_buf_r = emu_audio->buffer[1];
+
 	sdl->audio_pos_l = sdl->audio_buf_l;
 	sdl->audio_pos_r = sdl->audio_buf_r;
+
 	sdl->audio_len = emu_audio->buffer_size;
 }
 
@@ -136,6 +144,15 @@ void sdl_update_video()
 {
 	SDL_Rect vp_rect;
 
+	/* lock surface and copy image data */
+	SDL_LockSurface(sdl->buffer);
+	memcpy(&sdl->buffer->pixels[0], emu_video->pixeldata, (
+		emu_video->width *
+		emu_video->height *
+		2)
+		* sizeof(uint8));
+	SDL_UnlockSurface(sdl->buffer);
+	
 	vp_rect.x = emu_video->vp.x;
 	vp_rect.y = emu_video->vp.y;
 	vp_rect.w = emu_video->vp.width;

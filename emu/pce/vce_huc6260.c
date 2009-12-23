@@ -54,13 +54,13 @@ int pce_vce_init()
 #endif /* LSB */
 		}
 
-	/* build VCE to pixel lookup table */
-	for(i = 0; i < 0x200; i++)
+	/* build VCE to pixel lookup table (512 colors) */
+	for(i = 0; i < 512; i++)
 	{
-		int r = (i >> 3) & 7;
-		int g = (i >> 6) & 7;
-		int b = (i >> 0) & 7;
-		pce_vce->pixel_lut[i] = (r << 13 | g << 8 | b << 2) & 0xE71C;
+		int r = (i & 0x038) >> 3;
+		int g = (i & 0x1C0) >> 6;
+		int b = (i & 0x007) >> 0;
+		pce_vce->pixel_lut[i] = (r << 13 | g << 8 | b << 2);
 	}
 
 	return 1;
@@ -100,9 +100,9 @@ uint8 pce_vce_r(int addr)
 	/* check and store address MSB */
 	int msb = (addr & 1);
 
-	//debug("VCE read: addr=%08x msb=%d", addr, msb);
+	debug("VCE read: addr=$%03X msb=%d", addr, msb);
 
-	if((addr & ~1) == 0x0404)
+	if((addr & ~1) == 0x404)
 	{
 		uint8 temp = pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | (msb)];
 		/* increment address if MSB */
@@ -124,24 +124,30 @@ void pce_vce_w(int addr, int data)
 	/* check and store address MSB */
 	int msb = (addr & 1);
 
-	//debug("VCE write: addr=%08x msb=%d data=%d", addr, msb, data);
+	//debug("VCE write: addr=$%03X data=$%02X msb=%d", addr, data, msb);
 
 	switch(addr & ~1)
 	{
-	case 0x0400: /* control register */
+	case 0x400: /* CR: control register */
 		/* bit 0-1: DCC (0=5.37MHz, 1=7.16MHz, 2,3=10.7MHz
 		 * bit 2:   Frame/Field (0=262 lines, 1=263 lines)
 		 * bit 7:   Strip colorburst (0=don't strip, 1=strip) */
 		if(!msb)
 			pce_vce->ctrl = (data & 1);
 		break;
-	case 0x402: /* address */
+	case 0x402 /* 0x403 */: /* CTA: color table address */
 		if(!msb)
 			pce_vce->addr = (pce_vce->addr & 0x0100) | data;
 		else
 			pce_vce->addr = (pce_vce->addr & 0x00FF) | ((data & 1) << 8);
 		break;
-	case 0x404: /* data */
+	case 0x404 /* 0x405 */: /* CTD: color table data */
+		/* bit 0-2: blue
+		 * bit 3-5: red
+		 * bit 6-8: green */
+
+		//debug("VCE CTD write: addr=$%04X", (pce_vce->addr & 0x1FF) << 1 | msb);
+
 		/* pce_vce->addr & 0x1FF is offset */
 		if(data != pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | msb])
 		{
@@ -168,7 +174,7 @@ void pce_vce_w(int addr, int data)
 				tmp = (tmp >> 8) | (tmp << 8);
 #endif /* LSB */
 
-				for(n = 0; n < 0x10; n ++)
+				for(n = 0; n < 16; n ++)
 					pce_vce->pixel[0][(n << 4)] = pce_vce->pixel_lut[tmp];
 			}
 		}

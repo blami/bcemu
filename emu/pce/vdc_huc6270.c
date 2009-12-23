@@ -127,7 +127,7 @@ static inline void pce_vdc_dirty_bp(int addr)
 	if(pce_vdc->bp_dirty[pat_addr] == 0)
 	{
 		pce_vdc->bp_list[pce_vdc->bp_list_i] = pat_addr;
-		pce_vdc->bp_list_i += 1;
+		pce_vdc->bp_list_i++;
 	}
 	pce_vdc->bp_dirty[pat_addr] |= (1 << (addr & 0x07));
 }
@@ -145,7 +145,7 @@ static inline void pce_vdc_dirty_sp(int addr)
 	if(pce_vdc->sp_dirty[pat_addr] == 0)
 	{
 		pce_vdc->sp_list[pce_vdc->sp_list_i] = pat_addr;
-		pce_vdc->sp_list_i += 1;
+		pce_vdc->sp_list_i++;
 	}
 	pce_vdc->sp_dirty[pat_addr] |= (1 << (addr & 0x0F));
 }
@@ -333,7 +333,7 @@ void pce_vdc_dma()
 	int desr = (pce_vdc->reg[0x11] & 0x7FFF);
 	int lenr = (pce_vdc->reg[0x12] & 0x7FFF);
 
-	debug("VDC DMA VRAM src:%04X %c dst: %04X %c len: %04X",
+	debug("VDC DMA VRAM src=$%04X %c dst=$%04X %c len=$%04X",
 		sour, sour_inc ? '-' : '+',
 		desr, desr_inc ? '-' : '+',
 		lenr);
@@ -567,7 +567,7 @@ static void pce_vdc_cache_sp()
 		pat_addr = pce_vdc->sp_list[i];
 		pce_vdc->sp_list[i] = 0;
 
-		for(y = 0; y < 0x10; y++)
+		for(y = 0; y < 16; y++)
 			if(pce_vdc->sp_dirty[pat_addr] & (1 << y))
 			{
 				/* sprite character bytes (planar) */
@@ -577,7 +577,7 @@ static void pce_vdc_cache_sp()
 				b3 = pce_vdc->vram_write[(pat_addr << 6) + y + 0x30];
 
 				/* store sprite character into cache */
-				for(x = 0; x < 0x10; x += 1)
+				for(x = 0; x < 16; x += 1)
 				{
 					/* color index (planar) */
 					i0 = (b0 >> (x ^ 0x0F)) & 1;
@@ -752,7 +752,7 @@ static void pce_vdc_render_sp(int line)
 			if(sp->attr & SP_CGX)
 			{
 				pat_addr = (sp->pat_addr_r | pat_addr_mask);
-				src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0f) << 4)];
+				src = &pce_vdc->sp_cache[(pat_addr << 8) | ((v_line & 0x0F) << 4)];
 				dst += 16;
 
 				/* draw additional 16px */

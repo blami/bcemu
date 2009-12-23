@@ -23,11 +23,17 @@ typedef struct
 {
 	uint8 sel_ch;                   /**< selected channel */
 
+	/* registers */
 	uint8 balance;                  /**< balance (all channels 4+4b R,L) */
 	uint8 noise;                    /**< white noise control and frequency */
 	uint8 lfo_freq;                 /**< LFO (low-frequency oscillator) frequency */
 	uint8 lfo_ctrl;                 /**< LFO (low-frequency oscillator) control */
 
+	/* lookup tables */
+	int16 freq_lut[92][32];
+	uint8 noise_lut[0x1FFFF];
+
+	/* channels */
 	struct {
 		int counter;                /**< waveform index counter */
 

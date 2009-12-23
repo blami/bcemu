@@ -1,8 +1,8 @@
-/*****************************************************************************
+/******************************************************************************
  * bc_emu: portable video game emulator                                       *
  * Copyright © 2008-2010 Ondrej Balaz, <ondra@blami.net>                      *
  * Copyright © 1998-2000 Juergen Buchmueller                                  *
- * Copyright © 2006 Mark Ormston
+ * Copyright © 2006 Mark Ormston                                              *
  * http://www.blami.net/prj/bc_emu                                            *
  *                                                                            *
  * This is free software licensed under MIT license. See LICENSE.             *
@@ -20,7 +20,7 @@
 
 
 /* -------------------------------------------------------------------------- *
- * 6280 instructions                                                          *
+ * 65c02 instructions                                                         *
  * -------------------------------------------------------------------------- */
 
 /*
@@ -818,7 +818,7 @@
 
 /*
  * TAI
- * Transfer 'alternate' increment.
+ * Transfer 'from' alternate 'to' increment.
  */
 #define TAI \
 	from = RDMEMW(PCW); \
@@ -836,17 +836,17 @@
 
 /*
  * TAM
- * Transfer accumulator to MMR registers.
+ * Transfer accumulator to MPR registers.
  */
 #define TAM \
-	if(arg1 & 0x01) pce_cpu->mmr[0] = A; \
-	if(arg1 & 0x02) pce_cpu->mmr[1] = A; \
-	if(arg1 & 0x04) pce_cpu->mmr[2] = A; \
-	if(arg1 & 0x08) pce_cpu->mmr[3] = A; \
-	if(arg1 & 0x10) pce_cpu->mmr[4] = A; \
-	if(arg1 & 0x20) pce_cpu->mmr[5] = A; \
-	if(arg1 & 0x40) pce_cpu->mmr[6] = A; \
-	if(arg1 & 0x80) pce_cpu->mmr[7] = A
+	if(arg1 & 0x01) pce_cpu->mpr[0] = A; \
+	if(arg1 & 0x02) pce_cpu->mpr[1] = A; \
+	if(arg1 & 0x04) pce_cpu->mpr[2] = A; \
+	if(arg1 & 0x08) pce_cpu->mpr[3] = A; \
+	if(arg1 & 0x10) pce_cpu->mpr[4] = A; \
+	if(arg1 & 0x20) pce_cpu->mpr[5] = A; \
+	if(arg1 & 0x40) pce_cpu->mpr[6] = A; \
+	if(arg1 & 0x80) pce_cpu->mpr[7] = A
 
 /*
  * TDD
@@ -918,25 +918,25 @@
 
 /*
  * TMA
- * Transfer MMR registers to accumulator, highest bit wins.
+ * Transfer MPR registers to accumulator, highest bit wins.
  */
 #define TMA \
 	if(arg1 & 0x01) \
-		A = pce_cpu->mmr[0]; \
+		A = pce_cpu->mpr[0]; \
 	else if(arg1 & 0x02) \
-		A = pce_cpu->mmr[1]; \
+		A = pce_cpu->mpr[1]; \
 	else if(arg1 & 0x04) \
-		A = pce_cpu->mmr[2]; \
+		A = pce_cpu->mpr[2]; \
 	else if(arg1 & 0x08) \
-		A = pce_cpu->mmr[3]; \
+		A = pce_cpu->mpr[3]; \
 	else if(arg1 & 0x10) \
-		A = pce_cpu->mmr[4]; \
+		A = pce_cpu->mpr[4]; \
 	else if(arg1 & 0x20) \
-		A = pce_cpu->mmr[5]; \
+		A = pce_cpu->mpr[5]; \
 	else if(arg1 & 0x40) \
-		A = pce_cpu->mmr[6]; \
+		A = pce_cpu->mpr[6]; \
 	else if(arg1 & 0x80) \
-		A = pce_cpu->mmr[7]
+		A = pce_cpu->mpr[7]
 
 /*
  * TST

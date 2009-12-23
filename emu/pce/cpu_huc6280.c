@@ -57,7 +57,7 @@ void pce_cpu_reset()
 	/* setup status flag register */
 	pce_cpu->p = _pI | _pZ;
 	/* setup stack pointer */
-	pce_cpu->sp.d = 0x1ff;
+	pce_cpu->sp.d = 0x1FF;
 
 	PCL = RDMEM(INT_VEC_RESET);
 	PCH = RDMEM((INT_VEC_RESET+1));
@@ -127,15 +127,17 @@ int pce_cpu_exec(int cycles)
 		in = RDOP();
 
 		/* TODO this is the right place for debugger hook */
-		//debug("CPU cycle: %d", pce_cpu->cycle_count);
-		/*debug("CPU state: PC=%04x P=%04x S=%04x A=%04x X=%04x Y=%04x",
+		/*
+		debug("CPU cycle: %d", pce_cpu->cycle_count);
+		debug("CPU state: PC=$%04X P=$%04X S=$%04X A=$%04X X=$%04X Y=$%04X",
 			pce_cpu_reg_r(CPU_PC),
 			pce_cpu_reg_r(CPU_P),
 			pce_cpu_reg_r(CPU_S),
 			pce_cpu_reg_r(CPU_A),
 			pce_cpu_reg_r(CPU_X),
-			pce_cpu_reg_r(CPU_Y));*/
-		//debug("CPU opcode: %03x", in);
+			pce_cpu_reg_r(CPU_Y));
+		debug("CPU opcode: %03x", in);
+		*/
 
 		PCW++;
 		pce_cpu_op[in]();
@@ -219,9 +221,9 @@ unsigned int pce_cpu_reg_r(int name)
 		if(name <= REG_SP_CONTENTS)
 		{
 			unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
-			debug("offset register RDMEM: %x", offset);
+			debug("offset register RDMEM: $%04X", offset);
 
-			if(offset < 0x1ff)
+			if(offset < 0x1FF)
 				return RDMEM(offset) | (RDMEM(offset+1) << 8);
 		}
 	}
@@ -286,11 +288,11 @@ void pce_cpu_reg_w(int name, unsigned int value)
 		{
 			unsigned int offset = S + 2 * (REG_SP_CONTENTS - name);
 
-			debug("offset register WRMEM: %x", offset);
-			if(offset < 0x1ff)
+			debug("offset register WRMEM: $%04x", offset);
+			if(offset < 0x1FF)
 			{
-				WRMEM(offset, value & 0xff);
-				WRMEM(offset+1, (value >> 8) & 0xff);
+				WRMEM(offset, value & 0xFF);
+				WRMEM(offset+1, (value >> 8) & 0xFF);
 			}
 		}
 		else
@@ -496,7 +498,7 @@ static int pce_cpu_iopage_r(int addr)
 {
 	assert(pce && pce_cpu);
 
-	//debug("CPU iopage/read: addr=%08x", addr);
+	//debug("CPU iopage/read: addr=$%04X", addr);
 
 	switch(addr & 0x1C00)
 	{
@@ -524,7 +526,7 @@ static int pce_cpu_iopage_r(int addr)
 		break;
 	}
 
-	debug("CPU UNKNOWN iopage/read %04x (pc=%04x)", addr,
+	debug("CPU UNKNOWN iopage/read $%04X (pc=$%04X)", addr,
 		pce_cpu_reg_r(CPU_PC));
 	return (0x00);
 }
@@ -539,7 +541,7 @@ static void pce_cpu_iopage_w(int addr, int data)
 {
 	assert(pce_cpu);
 
-	//debug("CPU iopage/write: addr=%08x data=%d", addr, data);
+	//debug("CPU iopage/write: addr=$%04X data=$%02X", addr, data);
 
 	switch(addr & 0x1C00)
 	{
@@ -587,12 +589,12 @@ static void pce_cpu_iopage_w(int addr, int data)
 		break;
 	}
 
-	debug("CPU UNKNOWN iopage/write %02x: %04x (pc=%04x)", data, addr,
+	debug("CPU UNKNOWN iopage/write $%02X addr=$%04X (pc=$%04X)", data, addr,
 		pce_cpu_reg_r(CPU_PC));
 }
 
 /**
- * Read memory.
+ * Read memory (21bit physical address).
  * \param addr          memory address to be be read
  * \return              memory content
  */
@@ -602,7 +604,7 @@ int pce_cpu_mem_r(int addr)
 
 	assert(pce && pce_cpu);
 
-	//debug("CPU mem/read: addr=%08x page=%08x", addr, page);
+	//debug("CPU mem/read: addr=$%04X page=$%02X", addr, page);
 
 	/* lower ROM */
 	if(addr <= 0x0FFFFF)
@@ -622,13 +624,13 @@ int pce_cpu_mem_r(int addr)
 	if(page == 0xFF)
 		return pce_cpu_iopage_r(addr & 0x1FFF);
 
-	debug("CPU UNKNOWN mem/read %02x:%04x (pc=%08x)", page, addr & 0x1FFFF,
-		pce_cpu_reg_r(CPU_PC));
+	debug("CPU UNKNOWN mem/read $%02X addr=$%04X (pc=$%04X)", page,
+		addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 	return (0xFF);
 }
 
 /**
- * Write memory.
+ * Write memory (21bit physical address).
  * \param addr          memory address to write to
  * \param data          data to be written
  */
@@ -638,7 +640,7 @@ void pce_cpu_mem_w(int addr, int data)
 
 	uint8 page = (addr >> 13) & 0xFF;
 
-	//debug("CPU mem/write: addr=%08x page=%08x data=%d", addr, page, data);
+	//debug("CPU mem/write: addr=$%04X page=$%04X data=$%02X", addr, page, data);
 
 	/* RAM */
 	if(page == 0xF8 || page == 0xF9 || page == 0xFA || page == 0xFB)
@@ -654,6 +656,6 @@ void pce_cpu_mem_w(int addr, int data)
 		return;
 	}
 
-	debug("CPU UNKNOWN mem/write %02x: %02x:%04x (pc=%04x)", data, page,
-		addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
+	debug("CPU UNKNOWN mem/write $%02X page=$%02X addr=$%04X (pc=$%04X)", data,
+		page, addr & 0x1FFFF, pce_cpu_reg_r(CPU_PC));
 }

@@ -62,19 +62,25 @@ int emu_main(char* emu_name, char* ui_name)
 	memset(emu_audio, 0, sizeof(t_audio));
 	memset(emu_input, 0, sizeof(t_input));
 
+	/* initialize */
+	emu_ui->init();
+	emu_emu->init();
+
+	/* prepare pixeldata */
+	emu_video->pixeldata = xmalloc((
+		emu_video->width *      /* width */
+		emu_video->height       /* height */
+		* 2
+		) * sizeof(uint8));
+
 	/* prepare audio buffers */
 	emu_audio->buffer_size = 4096;
 	emu_audio->buffer[0] = xmalloc(emu_audio->buffer_size * sizeof(int16));
 	emu_audio->buffer[1] = xmalloc(emu_audio->buffer_size * sizeof(int16));
 
-	/* initialize */
-	emu_ui->init();
-	emu_emu->init();
-
 	/* FIXME in honour of portability there should be platform independent
 	 * function wrapper to measure 1sec */
 	time_t fps_t;
-	int fps_limit_usec = 0;
 	int fps = 0;
 
 	/* application main-loop */
@@ -85,6 +91,7 @@ int emu_main(char* emu_name, char* ui_name)
 		if(difftime(time(NULL), fps_t) == 1 || fps == 0)
 		{
 			debug("current fps: %d", fps)
+
 			fps_t = time(NULL);
 			fps = 0;
 		}
@@ -135,6 +142,9 @@ void emu_exit()
 
 	/* emu / ui modules are pointers to modules_* array so cleaning
 	 * them is REALLY BAD idea. */
+
+	/* cleanup pixeldata */
+	xfree(emu_video->pixeldata);
 
 	/* cleanup audio interface buffers */
 	if(emu_audio->buffer[0])

@@ -70,17 +70,19 @@ int sdl_init()
 	sdl->buffer = SDL_CreateRGBSurface(sdl->screen->flags,
 		1024,       /* FIXME this info should be set by emu, but ui is initialized before emu */
 		256,        /* FIXME -||- */
-		sdl->screen->format->BitsPerPixel,
-		sdl->screen->format->Rmask,
-		sdl->screen->format->Gmask,
-		sdl->screen->format->Bmask,
-		sdl->screen->format->Amask);
-
-	debug("SDL pixelformat: r<<%d g<<%d b<<%d",
-		sdl->screen->format->Rshift,
-		sdl->screen->format->Gshift,
-		sdl->screen->format->Bshift);
-
+		16,         /* FIXME -||- */
+#ifdef LSB
+		0xF800,
+		0x07E0,
+		0x001F,
+		0x0000
+#else
+		0xF100,
+		0x0E70,
+		0x008F,
+		0x0000
+#endif /* LSB */
+		);
 
 	/* FIXME filthy */
 	//emu_video->pixeldata = (uint8 *)&sdl->buffer->pixels[0];
@@ -146,11 +148,8 @@ void sdl_update_video()
 
 	/* lock surface and copy image data */
 	SDL_LockSurface(sdl->buffer);
-	memcpy(&sdl->buffer->pixels[0], emu_video->pixeldata, (
-		emu_video->width *
-		emu_video->height *
-		2)
-		* sizeof(uint8));
+	memcpy(&sdl->buffer->pixels[0], emu_video->pixeldata,
+		(emu_video->width * emu_video->height) * sizeof(uint16));
 	SDL_UnlockSurface(sdl->buffer);
 	
 	vp_rect.x = emu_video->vp.x;

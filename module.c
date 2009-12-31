@@ -70,6 +70,7 @@ t_ui* module_ui_find(const char* ui_id)
 	/* find specified UI */
 	while(1)
 	{
+		debug("%s", emu_modules_ui[i].id);
 		if(emu_modules_ui[i].id == NULL)
 		{
 			debug("not found: UI module `%s'", ui_id);

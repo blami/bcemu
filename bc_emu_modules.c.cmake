@@ -81,6 +81,17 @@ t_ui emu_modules_ui[] =
 		sdl_update_input
 	},
 #endif /* UI_SDL */
+#ifdef UI_SDLGL
+	/* SDL OpenGL UI */
+	{
+		"sdlgl",
+		sdlgl_init,
+		sdlgl_shutdown,
+		sdlgl_update_audio,
+		sdlgl_update_video,
+		sdlgl_update_input
+	},
+#endif /* UI_SDLGL */
 
 	{NULL, NULL, NULL, NULL, NULL, NULL}
 };

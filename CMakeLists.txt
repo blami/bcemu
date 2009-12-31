@@ -103,6 +103,7 @@ ENDIF(ARCH  STREQUAL "pc")
 
 ### EMULATOR OPTIONS ###
 SET(EMU)
+
 # NEC PCEngine
 OPTION(EMU_PCE          "Enable NEC PCEngine emulator"          ON)
 IF(EMU_PCE)
@@ -121,6 +122,7 @@ ENDIF(EMU_PCE)
 
 ### USER INTERFACE OPTIONS ###
 SET(UI)
+
 # SDL (only pc support)
 OPTION(UI_SDL           "Enable SDL user interface"             ON)
 IF(UI_SDL AND (ARCH STREQUAL "pc"))
@@ -133,6 +135,20 @@ IF(UI_SDL AND (ARCH STREQUAL "pc"))
 ELSEIF(UI_SDL AND NOT (ARCH STREQUAL "pc"))
 	MESSAGE(WARNING "SDL not supported on this architecture. Disabled.")
 ENDIF(UI_SDL AND (ARCH STREQUAL "pc"))
+
+# SDL OpenGL (only pc support)
+OPTION(UI_SDLGL         "Enable SDL OpenGL user interface"      ON)
+IF(UI_SDLGL AND (ARCH STREQUAL "pc"))
+	SET(UI "sdlgl ${UI}")
+	FIND_PACKAGE(SDL REQUIRED)
+	FIND_PACKAGE(OpenGL REQUIRED)
+	ADD_LIBRARY(ui_sdlgl STATIC
+		ui/sdlgl/sdlgl_main.c
+	)
+	SET(LIBS ${LIBS} ${SDL_LIBRARY} ${OPENGL_LIBRARY} ui_sdlgl)
+ELSEIF(UI_SDLGL AND NOT (ARCH STREQUAL "pc"))
+	MESSAGE(WARNING "SDL OpenGL not supported on this architecture. Disabled.")
+ENDIF(UI_SDLGL AND (ARCH STREQUAL "pc"))
 
 
 ### CONFIGURATION OUTPUT ###

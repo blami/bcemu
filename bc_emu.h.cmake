@@ -54,6 +54,7 @@
 #cmakedefine UI         "@UI@"
 #cmakedefine UI_NULL    /* null user interface (debug) */
 #cmakedefine UI_SDL     /* SDL user interface */
+#cmakedefine UI_SDLGL   /* SDL OpenGL user interface */
 
 /* -------------------------------------------------------------------------- *
  * Shared headers                                                             *
@@ -91,6 +92,10 @@
 #ifdef UI_SDL                   /* SDL user interface */
 #include "ui/sdl/sdl.h"
 #endif /* UI_SDL */
+
+#ifdef UI_SDLGL                 /* SDL OpenGL user interface */
+#include "ui/sdlgl/sdlgl.h"
+#endif /* UI_SDLGL */
 
 /* -------------------------------------------------------------------------- *
  * Data types                                                                 *

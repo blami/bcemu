@@ -67,11 +67,8 @@ int emu_main(char* emu_name, char* ui_name)
 	emu_emu->init();
 
 	/* prepare pixeldata */
-	emu_video->pixeldata = xmalloc((
-		emu_video->width *      /* width */
-		emu_video->height       /* height */
-		* 2
-		) * sizeof(uint8));
+	emu_video->pixeldata = xmalloc(
+		(emu_video->width * emu_video->height) * sizeof(uint16));
 
 	/* prepare audio buffers */
 	emu_audio->buffer_size = 4096;

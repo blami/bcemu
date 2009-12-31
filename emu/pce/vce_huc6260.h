@@ -27,11 +27,11 @@ typedef struct
 	uint16 addr;                    /**< address */
 
 	/* pre-calculated lookup tables */
-	uint16 pixel_lut[0x200];        /**< pixel lookup table */
+	uint16 pixel_lut[512];          /**< pixel lookup table (512 colors) */
 	uint32 bp_lut[0x10000];         /**< bit-plane lookup table */
 
 	/* pixel table */
-	uint16 pixel[2][0x100];         /**< VCE color to 16bit pixel table */
+	uint16 pixel[2][256];           /**< VCE color to 16bit pixel table */
 
 } t_pce_vce;
 

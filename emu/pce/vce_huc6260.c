@@ -36,8 +36,8 @@ int pce_vce_init()
 	/* prepare lookup tables for bitplanes and pixel lookups */
 
 	/* build bitplane to pixel lookup table */
-	for(i = 0; i < 0x100; i++)
-		for(j = 0; j < 0x100; j++)
+	for(i = 0; i < 256; i++)
+		for(j = 0; j < 256; j++)
 		{
 			uint32 val = 0;
 			for(x = 0; x < 8; x++)
@@ -57,12 +57,13 @@ int pce_vce_init()
 	/* build VCE to pixel lookup table (512 colors) */
 	for(i = 0; i < 512; i++)
 	{
-		int r = (i & 0x038) >> 3;
-		int g = (i & 0x1C0) >> 6;
-		int b = (i & 0x007) >> 0;
-		pce_vce->pixel_lut[i] = (r << 13 | g << 8 | b << 2);
+		int r = (i >> 3) & 7;
+		int g = (i >> 6) & 7;
+		int b = (i >> 0) & 7;
+		pce_vce->pixel_lut[i] = (r << 13 | g << 8 | b << 2) & 0xE71C;
 	}
 
+	memset(pce_vce->data, 0, 0x400);
 	return 1;
 }
 
@@ -146,16 +147,27 @@ void pce_vce_w(int addr, int data)
 		 * bit 3-5: red
 		 * bit 6-8: green */
 
-		//debug("VCE CTD write: addr=$%04X", (pce_vce->addr & 0x1FF) << 1 | msb);
-
 		/* pce_vce->addr & 0x1FF is offset */
 		if(data != pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | msb])
 		{
+			/* Some games (Pc Genjin 2) sends invalid data most significant
+			 * byte. When writing to $404+$405, data should have maximal length
+			 * of 9 bits. */
+			if(msb && data > 1)
+			{
+				/*
+				debug("VCE unexpected CTD data write"
+					"(MSB data is $%04X, should be $%04X)", data, data & 0x1);
+				*/
+				data = data & 0x1;
+			}
+
 			pce_vce->data[((pce_vce->addr & 0x1FF) << 1) | msb] = data;
+
 			if((pce_vce->addr & 0x0F) != 0x00)
 			{
 				/* form VCEs pixel_lut index */
-				uint16 tmp = *(uint16 *)&pce_vce->data[(pce_vce->addr << 1)];
+				uint16 tmp = *(uint16 *)&pce_vce->data[pce_vce->addr << 1];
 #ifndef LSB
 				tmp = (tmp >> 8) | (tmp << 8);
 #endif /* LSB */
@@ -163,8 +175,8 @@ void pce_vce_w(int addr, int data)
 				pce_vce->pixel[(pce_vce->addr >> 8) & 1][(pce_vce->addr & 0xFF)] = pce_vce->pixel_lut[tmp];
 			}
 
-			/* update overscan color (color around TV visible area. This is
-			 * really not important) */
+			/* update overscan color (color 0 in all palettes which is visible
+			 * around TV picture area. This is really not important) */
 			if((pce_vce->addr & 0x0F) == 0x00)
 			{
 				int n;

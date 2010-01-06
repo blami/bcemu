@@ -49,7 +49,7 @@ int sdl_init()
 	as.freq = 22050;
 	as.format = AUDIO_S16; /* signed 16bit */
 	as.channels = 2;
-	as.samples = 4096;
+	as.samples = 1024;
 	as.callback = sdl_audio_fill;
 	as.userdata = NULL;
 

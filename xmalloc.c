@@ -142,7 +142,7 @@ xstrndup(const char* s, size_t n)
 	if(!(n_s = strncpy(n_s, s, n)))
 		fatal("strncpy() failed!");
 
-	n_s[n+1] = '\0';
+	n_s[n] = '\0';
 
 	return n_s;
 }

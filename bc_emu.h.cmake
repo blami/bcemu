@@ -37,7 +37,6 @@
 #cmakedefine BUILD_CPU  "@BUILD_CPU@"
 #cmakedefine VERSION    "@VERSION@"
 #cmakedefine CODENAME   "@CODENAME@"
-#cmakedefine WIN32
 
 /* architecture */
 #cmakedefine ARCH       "@ARCH@"

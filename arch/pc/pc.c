@@ -105,13 +105,22 @@ static t_rom* pc_load_rom(const char* filename)
 
 	debug("loading ROM image: %s", filename);
 
+#ifndef WIN32
 	if(!(f = fopen(filename, "r")))
+#else
+	/* Win32 differentiate between text and binary file descriptors */
+	if(!(f = fopen(filename, "rb")))
+#endif /* WIN32 */ 
+	{
+		ferror(f);
 		return NULL;
+	}
 
 	/* get file size, portable way (ANSI C) */
 	if(fseek(f, 0, SEEK_END) != 0)
 	{
 		debug("couldn't seek to file end");
+		ferror(f);
 		fclose(f);
 		return NULL;
 	}

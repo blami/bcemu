@@ -23,5 +23,7 @@ extern void     sdl_shutdown();
 extern void     sdl_update_video();
 extern void     sdl_update_audio();
 extern void     sdl_update_input();
+extern void     sdl_frame_begin();
+extern void     sdl_frame_end();
 
 #endif /* __SDL_H */

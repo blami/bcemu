@@ -278,6 +278,21 @@ void sdl_update_input()
 	}
 }
 
+void sdl_frame_begin()
+{
+	sdl->ticks_begin = SDL_GetTicks();
+}
+
+void sdl_frame_end()
+{
+	sdl->ticks_end = SDL_GetTicks();
+	uint32 delta = sdl->ticks_end - sdl->ticks_begin;
+
+	/* FIXME: 60fps should be configurable */
+	if(delta < (uint32)(1000/60))
+		SDL_Delay((uint32)(1000/60) - delta);
+}
+
 /* -------------------------------------------------------------------------- *
  * Helpers                                                                    *
  * -------------------------------------------------------------------------- */

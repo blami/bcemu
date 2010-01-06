@@ -32,6 +32,9 @@ typedef struct
 	int16* audio_pos_r;
 	int audio_len;
 
+	uint32 ticks_begin;
+	uint32 ticks_end;
+
 	SDL_Event event;            /**< input event */
 
 } t_sdl;

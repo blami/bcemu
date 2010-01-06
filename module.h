@@ -42,6 +42,8 @@ typedef struct
 	void (*update_audio)();
 	void (*update_video)();
 	void (*update_input)();
+	void (*frame_begin)();
+	void (*frame_end)();
 
 } t_ui;
 

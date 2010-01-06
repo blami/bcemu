@@ -78,7 +78,9 @@ t_ui emu_modules_ui[] =
 		sdl_shutdown,
 		sdl_update_audio,
 		sdl_update_video,
-		sdl_update_input
+		sdl_update_input,
+		sdl_frame_begin,
+		sdl_frame_end
 	},
 #endif /* UI_SDL */
 #ifdef UI_SDLGL
@@ -89,7 +91,9 @@ t_ui emu_modules_ui[] =
 		sdlgl_shutdown,
 		sdlgl_update_audio,
 		sdlgl_update_video,
-		sdlgl_update_input
+		sdlgl_update_input,
+		sdlgl_frame_begin,
+		sdlgl_frame_end
 	},
 #endif /* UI_SDLGL */
 

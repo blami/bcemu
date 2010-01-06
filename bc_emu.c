@@ -23,6 +23,10 @@ t_video*        emu_video;          /**< video data interface structure */
 t_audio*        emu_audio;          /**< audio data interface structure */
 t_input*        emu_input;          /**< input data interface structure */
 
+int fps = 0;
+int old_ticks = 0;
+int ticks = 0;
+
 /*
  * NOTE:
  * This file acts only as holder of arch non-specific code. main() or other
@@ -78,17 +82,20 @@ int emu_main(char* emu_name, char* ui_name)
 	/* FIXME in honour of portability there should be platform independent
 	 * function wrapper to measure 1sec */
 	time_t fps_t;
-	int fps = 0;
+
+	/* FIXME DEBUG */
+	debug("desired fps: %d", (uint32)((double)7159090.90909090 / 455 / 263)); // * 65536 * 256));
 
 	/* application main-loop */
 	debug("entering emu main-loop...");
 	while(1)
 	{
+		emu_ui->frame_begin();
+
 		/* FIXME make this portable */
 		if(difftime(time(NULL), fps_t) == 1 || fps == 0)
 		{
 			debug("current fps: %d", fps)
-
 			fps_t = time(NULL);
 			fps = 0;
 		}
@@ -111,6 +118,8 @@ int emu_main(char* emu_name, char* ui_name)
 
 		/* increase fps counter */
 		fps++;
+
+		emu_ui->frame_end();
 	}
 	debug("exiting emu main-loop...");
 
@@ -156,5 +165,4 @@ void emu_exit()
 		xfree(emu_audio);
 	if(emu_input != NULL)
 		xfree(emu_input);
-
 }

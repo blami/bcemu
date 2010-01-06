@@ -27,7 +27,6 @@
 typedef struct
 {
 	SDL_Surface* screen;        /**< surface tied with screen (back buffer) */
-	SDL_Surface* buffer;        /**< drawing buffer */
 	GLuint texture;             /**< texture id */
 
 	int16* audio_buf_l;
@@ -35,6 +34,9 @@ typedef struct
 	int16* audio_pos_l;
 	int16* audio_pos_r;
 	int audio_len;
+
+	uint32 ticks_begin;
+	uint32 ticks_end;
 
 	SDL_Event event;            /**< input event */
 

@@ -14,7 +14,6 @@
 
 static t_sdlgl* sdlgl;
 static void sdlgl_audio_fill(void*, uint8*, int);
-static inline int sdlgl_npot(int);
 
 /* -------------------------------------------------------------------------- *
  * Init, shutdown routines                                                    *
@@ -43,21 +42,15 @@ int sdlgl_init()
 		return 0;
 	}
 
-	debug("SDL OpenGL screen opened: %dx%dx%d", 640, 480, 16);
-
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.5f); 
-	/* aspect ratio */
-	//float ar = (GLfloat)(640 / 480);
-
-	glClearColor(0.0f, 1.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glViewport(0, 0, 640, 480);
-
-	/* hint and shade model settings */
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glEnable(GL_TEXTURE_2D);
 
-	sdlgl->texture = -1;
+	/* prepare texture buffer */
+	glGenTextures(1, &sdlgl->texture);
 
-	debug("SDL OpenGL prepared");
+	debug("SDL OpenGL screen opened: %dx%dx%d", 640, 480, 16);
 
 	/* TODO configuration file section `ui.[sdl.]audio_bitrate,
 	 * ui.[sdl.]audio_ch */
@@ -84,21 +77,6 @@ int sdlgl_init()
 
 	SDL_PauseAudio(0); /* trigger callback */
 
-	/* prepare buffer SDL surface */
-	sdlgl->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
-		1024,       /* FIXME this info should be set by emu, but ui is initialized before emu */
-		256,        /* FIXME -||- */
-		sdlgl->screen->format->BitsPerPixel,
-		sdlgl->screen->format->Rmask,
-		sdlgl->screen->format->Gmask,
-		sdlgl->screen->format->Bmask,
-		sdlgl->screen->format->Amask
-		);
-	sdlgl->texture = NULL;
-
-	/* FIXME filthy */
-	//emu_video->pixeldata = (uint8 *)&sdl->buffer->pixels[0];
-
 	/* TODO configuration file section `ui.[sdl.]keyrepeat */
 	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_WM_SetCaption("bc_emu", NULL);
@@ -114,11 +92,13 @@ void sdlgl_shutdown()
 	debug("SDL OpenGL shutdown");
 	assert(sdlgl != NULL);
 
+	/* cleanup texture buffer */
+	if(sdlgl->texture)
+		glDeleteTextures(1, &sdlgl->texture);
+
 	/* cleanup surfaces */
 	if(sdlgl->screen)
 		SDL_FreeSurface(sdlgl->screen);
-	if(sdlgl->buffer)
-		SDL_FreeSurface(sdlgl->buffer);
 
 	/* close audio device */
 	SDL_CloseAudio();
@@ -157,52 +137,25 @@ void sdlgl_update_audio()
 void sdlgl_update_video()
 {
 	SDL_Rect vp_rect;
-	GLuint texture;
 
 	vp_rect.x = emu_video->vp.x;
 	vp_rect.y = emu_video->vp.y;
 	vp_rect.w = emu_video->vp.width;
 	vp_rect.h = emu_video->vp.height;
 
-	/* lock surface and copy image data */
-	SDL_LockSurface(sdlgl->buffer);
-	memcpy(&sdlgl->buffer->pixels[0], emu_video->pixeldata, (
-		emu_video->width *
-		emu_video->height
-		)
-		* sizeof(uint16));
-	SDL_UnlockSurface(sdlgl->buffer);
-
 	/* prepare texture */
-	if(&sdlgl->texture == -1)
-	{
-		glGenTextures(1, &sdlgl->texture);
-	}
-
-	glEnable(GL_TEXTURE_2D);
-
 	glBindTexture(GL_TEXTURE_2D, sdlgl->texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
 		3,
-		sdlgl->buffer->clip_rect.w,
-		sdlgl->buffer->clip_rect.h,
+		emu_video->width,
+		emu_video->height,
 		0,
 		GL_RGB,
 		GL_UNSIGNED_SHORT_5_6_5,
-		sdlgl->buffer->pixels);
-
-	/*
-	glClear(GL_COLOR_BUFFER_BIT);
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	*/
+		emu_video->pixeldata);
 
 	/* calculate viewport coords */
 	float vx, vy, vw, vh;
@@ -212,6 +165,7 @@ void sdlgl_update_video()
 	vw = (float)(vp_rect.x + vp_rect.w) / emu_video->width;
 	vh = (float)(vp_rect.y + vp_rect.h) / emu_video->height;
 
+	/* place textured quad */
 	glBegin(GL_QUADS);
 		glTexCoord2f(vx, vh); glVertex2i(-1,-1);
 		glTexCoord2f(vw, vh); glVertex2i( 1,-1);
@@ -219,18 +173,7 @@ void sdlgl_update_video()
 		glTexCoord2f(vx, vy); glVertex2i(-1, 1);
 	glEnd();
 
-	/*
-	glPopMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	*/
-
-	glFlush();
-
-	glDeleteTextures(1, &sdlgl->texture);
-	glDisable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, sdlgl->texture);
+	//glFlush();
 
 	/* render frame */
 	SDL_GL_SwapBuffers();
@@ -344,6 +287,21 @@ void sdlgl_update_input()
 			break;
 		}
 	}
+}
+
+void sdlgl_frame_begin()
+{
+	sdlgl->ticks_begin = SDL_GetTicks();
+}
+
+void sdlgl_frame_end()
+{
+	sdlgl->ticks_end = SDL_GetTicks();
+	uint32 delta = sdlgl->ticks_end - sdlgl->ticks_begin;
+
+	/* FIXME: 60fps should be configurable */
+	if(delta < (uint32)(1000/60))
+		SDL_Delay((uint32)(1000/60) - delta);
 }
 
 /* -------------------------------------------------------------------------- *

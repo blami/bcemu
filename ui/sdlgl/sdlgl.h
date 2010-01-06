@@ -23,5 +23,7 @@ extern void     sdlgl_shutdown();
 extern void     sdlgl_update_video();
 extern void     sdlgl_update_audio();
 extern void     sdlgl_update_input();
+extern void     sdlgl_frame_begin();
+extern void     sdlgl_frame_end();
 
 #endif /* __SDLGL_H */

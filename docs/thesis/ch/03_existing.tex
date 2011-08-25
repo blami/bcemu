@@ -1,0 +1,195 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bc.tex - Bachelor thesis                                                    %
+% Subject: bc_emu - portable video game emulator                              %
+% Chapter: Existujici implementace                                            %
+% Author: Ondrej Balaz <ondra@blami.net>                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Existující implementace}\label{chap:exist}
+
+I přes to, že systém NEC PCEngine nikdy nedosáhl podobné popularity a rozšíření
+ve světe, jako jiné videoherní konzole stejné generace (Nintendo Famicom, Sega
+Master System, Atari 7800), vzniklo několik jeho emulátorů. Jejich existence
+značně usnadňuje vývoj a lazení nového emulátoru. Kromě toho, že mohou být
+použity jako prostředek pro ověření funkčnosti v případě absence skutečného,
+dnes již nedostupného, hardware systému NEC PCEngine, je řada z nich šířena i
+ve zdrojové podobě jako svobodný software, což umožňuje studovat jak
+specifikaci systému, tak i způsob jakým jejich autoři vyřešili vlastní
+implementaci jeho jednotlivých částí.
+
+V úvodní sekci~\ref{chap:exist_listing} této kapitoly je nastíněna situace v
+oblasti emulace systému NEC PCEngine a jsou představeny některé existující
+implementace emulátorů. Sekce~\ref{chap:exist_summary} shrnuje přednosti a
+nedostatky těchto implementací a na jejich základě nastiňuje směr pro další
+analýzu, návrh a implementaci vlastního emulátoru.
+
+% -----------------------------------------------------------------------------
+% Přehled emulátorů NEC PCEngine
+% -----------------------------------------------------------------------------
+
+\section{Přehled emulátorů NEC PCEngine}\label{chap:exist_listing}
+
+Většina emulátorů systému NEC PCEngine vznikla v letech 1995-2001, hlavně pro
+osobní počítače s operačními systémy Microsoft DOS a Microsoft Windows. V
+následujícím přehledu jsou uvedeny pouze tři nejpoužívanější, aktivně udržované
+a vyvíjené emulátory. Další, které většinou nejsou zdaleka tak kompletní z
+hlediska funkčnosti a kompatibility se zveřejněnými čipovými kartami HuCard,
+nebo je jejich kód zastaralý a jsou v dnešních podmínkách nepoužitelné, lze
+nalézt např. na~\cite{wwwEmulatorZone}.
+
+% MagicEngine
+
+\subsection{MagicEngine}
+
+MagicEngine~\cite{wwwMagicEngine} je komerční emulátor systému NEC PCEngine.
+Podporuje emulaci všech verzí systému včetně řady rozšíření (např. CD-ROM
+mechanika). Emulace je v podání tohoto emulátoru velice přesná, rychlá a bez
+problému je možné spustit většinu obrazů zveřejněných na čipových kartách
+HuCard, včetně těch, které využívají nestandardního chování systému.
+
+Podporovány jsou platformy Microsoft DOS (jen starší verze emulátoru),
+Microsoft Windows a Apple MacOS X. Program disponuje vlastním jednoduchým
+grafickým uživatelským rozhraním. Nároky na hardware jsou poměrně vysoké a při
+použití pod operačním systémem Windows vyžaduje MagicEngine grafickou
+akceleraci pomocí DirectX nebo OpenGL. V současné době se jedná o
+nejpopulárnější emulátor NEC PCEngine pro Microsoft Windows.
+
+Přesto, že autoři MagicEngine významným dílem přispěli ke zdokumentování
+architektury NEC PCEngine a zveřejnili řadu nástrojů pro vývoj programů s tímto
+systémem kompatibilních, zdrojový kód MagicEngine není otevřený, což znemožňuje
+zásahy kýmkoliv jiným než autory.
+
+\subsubsection*{Klíčové vlastnosti}
+
+\begin{itemize}
+\item vysoká přensnost emulace
+\item podpora všech verzí a rozšíření systému
+\item kompatibilita s většinou čipových karet HuCard
+\end{itemize}
+
+% Ootake
+
+\subsection{Ootake}
+
+Ootake~\cite{wwwOotake} je emulátor systému NEC PCEngine od japonského autora
+Nakamura Kitao. Podobně jako MagicEngine podporuje Ootake všechny verze systému
+včetně řady rozšíření. Autor se speciálně věnuje problematice dosažení stejného
+pocitu ze hry\footnote{Např. poměrně složitě implementuje zpracování vstupu
+z herního ovladače tak, aby bylo kompenzováno zpoždění způsobené obsluhami
+operačního systému.} jako na originálním hardware, takže je emulátor velice
+přesný i po stránce zpracování vstupu apod. Množina podporovaných titulů je o
+něco menší než v případě MagicEngine.
+
+Ootake je napsán výhradně pro platformu Microsoft Windows v jejímž duchu se
+také nese uživatelské rozhraní programu. Hardwarové nároky Ootake jsou poměrně
+vysoké, emulátor vyžaduje grafickou akceleraci pomocí DirectX a procesor s
+rychlostí cca 1.6GHz pro plynulý běh herních programů.
+
+Zdrojový kód emulátoru Ootake je veřejně přístupný a šířen pod licencí GNU/GPL.
+Vzhledem k tomu, že je program vyvíjen bez ohledu na přenositelnost kódu, na
+řadě míst se prolíná kód zajišťující logiku emulace a specifický kód pro
+uživatelské rozhraní v Microsoft Windows. Kód je z důvodu přesnosti emulace
+protkán řadou optimalizací a jeho čitelnost navíc ztěžuje fakt, že veškeré
+komentáře jsou psány v japonštině.
+
+\subsubsection*{Klíčové vlastnosti}
+
+\begin{itemize}
+\item vysoká přesnost emulace s ohledem na pocit ze hry
+\item podpora všech verzí a rozšíření systému
+\item otevřený zdrojový kód
+\end{itemize}
+
+% Mednafen
+
+\subsection{Mednafen}
+
+Mednafen~\cite{wwwMednafen} je emulátor několika populárních videoherních
+systémů mezi nimiž je i systém NEC PCEngine. Emulace NEC PCEngine v rámci
+tohoto programu využívá několika společných komponent s emulátorem systému NEC
+PC FX32, který je nástupcem NEC PCEngine. Stejně jako v předchozích případech
+je podporována řada rozšíření. I přes některé nepřesnosti časování v emulaci je
+celková přesnost emulace vysoká. Součástí programu je podpora hry více hráčů na
+jedné konzoli přes TCP/IP (vzdálený herní ovladač), nebo vestavěný ladicí
+nástroj, který umožňuje krokovat běžící herní program a sledovat obsah
+významných oblastí paměti a registrů.
+
+Program je psán přenositelně a je prokazatelně možné ho sestavit a používat na
+platformách GNU/Linux, FreeBSD, Apple MacOS X a Microsoft Windows. Uživatelské
+rozhraní programu je zajištěno pomocí přenositelné knihovny pro uživatelská
+rozhraní libSDL. Hardwarové nároky na plynulou emulaci jsou oproti předchozím
+řešením nižší.
+
+Mednafem má otevřený zdrojový kód šířený pod licencí GNU/GPL. Je psán v jazyce
+C++ s důrazem na přenositelnost, hlavně mezi platformami GNU/Linux a Microsoft
+Windows. Nepočítá se však s přenositelností na platformy, kde není dostupná
+knihovna libSDL, která je pevnou součástí programového kódu. Stejně tak
+jednotlivé emulátory podporovaných systémů nepoužívají žádné společné rozhraní,
+které by umožňovalo program jednoduše rozšířit.
+
+\subsubsection*{Klíčové vlastnosti}
+
+\begin{itemize}
+\item podpora dalších videoherních systémů
+\item integrovaný nástroj pro lazení emulovaných programů
+\item podpora hry více hráčů po síti TCP/IP
+\item otevřený zdrojový kód
+\item přenositelnost
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+% Shrnuti
+% -----------------------------------------------------------------------------
+
+\section{Shrnutí}\label{chap:exist_summary}
+
+Většina existujících implementací emulátoru NEC PCEngine (včetně řady těch,
+které nejsou v předchozím výčtu uvedeny) jsou jednoúčelové programy soustředící
+se výhradně na emulaci tohoto systému, případně jeho dalších variant a
+rozšíření.
+
+Jistě pozitivní stránkou tohoto přístupu je v některých případech vysoká
+přesnost a kvalita emulace, protože se autor nemusí soustředit na řadu dalších
+podporovaných videoherních systémů. Na druhou stranu je množina opravdu
+nezapomenutelných a populárních herních titulů pro jednotlivé videoherní
+systémy poměrně malá\footnote{Velice populární japonská série herních titulů
+Final Fantasy vydávaná společnosti Square Enix má v současné době více než 13
+dílů, které vyšly střídavě pro 12 různých typů videoherních systémů s průměrnou
+bilancí 1-2 díly na jeden typ videoherního systému.} a uživatelé často
+používají více emulátorů několika různých systému. Jsou tak nuceni používat
+více jednoúčelových programů s různým způsobem ovládání a chováním i přesto, že
+jejich úkol je z uživatelského pohledu stejný.
+
+\uv{Slabinou} existujících implementací je také poměrně malá množina
+podporovaných platforem. Jak již bylo uvedeno, většina emulátorů systému NEC
+PCEngine vznikla v letech 1995-2001, tedy v období kdy poměrně vysokým nárokům
+na výkon při provádění emulace dostačovaly prakticky jen osobní počítače a v
+oblasti operačních systémů nebyl např. GNU/Linux zdaleka tak populární jako
+Microsoft DOS nebo Microsoft Windows.
+
+V současné době existuje řada videoherních handheldů\footnote{Přenosné kapesní
+videoherní konzole vybavené displejem a ovládacími prvky herního ovladače,
+často napájené z baterií, např. Sony Playstation Portable, Nintendo DS nebo
+Gamepark Wiz.}, chytrých mobilních telefonů\footnote{Mobilní telefony vybavené
+operačním systémem umožňujícím instalaci a spouštění dalších programů, např.
+Nokia Series60 s operačním systémem Symbian nebo telefony HTC s operačními
+systémy Google Android nebo Microsoft Windows Mobile} a kapesních počítačů,
+které mohou výkonem směle konkurovat tehdejším osobním počítačům, nikoliv však
+těm dnešním, což je jeden z důvodů proč právě tato zařízení jsou zajímavou,
+platformou pro emulátory starších videoherních systémů. Většina existujících
+emulátorů ale stěží počítá s přenositelností na jiné operační systémy než je
+Microsoft Windows, natož na tato zařízení.
+
+Kromě slabin existujících implmentací ale existují i jejich přednosti. Nejvíce
+inspirativní je v této oblasti poslední zmíněný emulátor Mednafen, který
+implementuje přenositelné uživatelské rozhraní pomocí knihovny libSDL a
+obsahuje podporu pro lazení emulovaného programu, nebo hru více hráčů po síti
+TCP/IP.
+
+Při následující analýze a návrhu vlastního emulátoru je kladen důraz na
+potlačení uvedených nedostatků při zachování předností existujících řešení.
+
+Emulátor bude navržen modulárně, aby bylo v budoucnu snadné ho rozšířit
+o podporu emulace dalších videoherních systémů při zachování společného
+ovladání. Stejně tak podpora platforem nebude způsobem implementace omezena
+pouze na operační systémy osobních počítačů.

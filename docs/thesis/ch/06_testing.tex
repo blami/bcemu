@@ -1,0 +1,160 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bc.tex - Bachelor thesis                                                    %
+% Subject: bc_emu - portable video game emulator                              %
+% Chapter: Uvod                                                               %
+% Author: Ondrej Balaz <ondra@blami.net>                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Testování a lazení}\label{chap:test}
+
+Emulace videoherního systému je složitý proces sestávající z napodobování řady
+funkčních součástí tohoto systému, včetně replikace jejich nedokonalostí, nebo
+dokonce, chyb. Dvojnásobně toto platí o emulátorech videoherních konzolí, kdy
+ve většině případů není dostupná žádná oficiální specifikace hardwaru a
+neoficiální se často liší od skutečnosti, je mylná nebo vůbec neexistuje.
+
+Od samotného počátku implementace vede k prvním viditelným výsledkům často
+dlouhá cesta, na níž se nelze obejít bez důkladného odlazení a otestování
+jednotlivých částí kódu, které jsou stavebními kameny výsledného programu.
+Vzhledem ke způsobu práce emulátoru mohou i malé chyby snadno způsobit
+řetězovou reakci ústící v neočekávané chování na místě, kde chyba vůbec
+nenastala. Není třeba zmiňovat, že takové chyby se hledají nejhůře.
+
+Tato kapitola v sekci~\ref{chap:test_debug} stručně popisuje metody jakými byl
+lazen a testován vyvíjený program a v sekci~\ref{chap:test_results} shrnuje
+výsledky testování současné implementace.
+
+% -----------------------------------------------------------------------------
+% Prostredky a zpusob lazeni
+% -----------------------------------------------------------------------------
+
+\section{Prostředky a způsob lazení}\label{chap:test_debug}
+
+Interpretační způsob implementace emulátoru výrazně usnadňuje lazení programu
+tím, že jsou všechny části systému představovány datovými strukturami
+reprezentujícími jejich vnitřní stav (obsah interní paměti, registrů apod.) a
+kód emulovaného programu je zpracováván v iteracích hlavní programové smyčky.
+
+V průběhu vývoje je tak možné \uv{sledovat} dění uvnitř emulovaného systému
+pomocí běžných ladících nástrojů umožňujících krokování a sledování obsahu
+proměnných, jakým je například debugger GDB~\cite{wwwGDB}.
+
+Kromě toho je možné využít některých ladících mechanismů implementovaných přímo
+v programu. Jedním z nich je například funkce zpětného volání implementovaná
+při obsluze přerušení.
+
+Veškeré důležité informace lze v každém kroku programu vypsat pomocí ladícího
+makra {\it debug()}, jehož použití je podmíněno sestavením s aktivovanou
+proměnnou {\tt DEBUG} sestavovacího systému CMake. Aktivace této proměnné navíc
+způsobí, že program bude na standardní chybový výstup vypisovat řadu informací
+z důležitých míst v kódu (např. upozornění na provedení neošetřeného přístupu
+do paměti, pokus o vykonání ilegální instrukce atd.)
+
+K pohodlnosti lazení také přispívá modulární architektura programu, která
+dovoluje jednotlivé moduly, nebo jejich části oddělit a ladit zvlášť. Tento
+způsob byl využit zejména při implementaci emulace CPU HuC6280, která je z
+hlediska funkčnosti nejdůležitější.
+
+I přes všechny tyto skutečnosti může být lazení programu někdy problematické a
+hodilo by se mít integrovaný ladící nástroj, který by umožňoval alespoň
+sledování registrů a obsahu paměti během krokování emulovaného programu.
+Implementace takového nástroje dostatečně obecného vzhledem k architektuře a
+vizi dalšího rozšiřování programu o nové moduly emulátorů je rozhodně nad rámec
+této práce.
+
+% -----------------------------------------------------------------------------
+% Testovani funkcnosti
+% -----------------------------------------------------------------------------
+
+\section{Testování}\label{chap:test_results}
+
+V rané fázi vývoje probíhalo testování (hlavně implementace CPU HuC6280) pomocí
+miniaturních assemblerových programů přeložených pomocí software
+MagicKit~\cite{wwwMagicKit} a porovnání výsledků proti běhu stejného programu v
+mírně modifikovaném emulátoru M6502~\cite{wwwM6502}.
+
+Další testy byly provedeny sadou ROM obrazů pořízených z paměti čipových karet
+HuCard speciálním zařízením PCE Pro 32M. To umožňuje záznam obrazu ROM
+vloženého modulu HuCard pomocí rozhraní USB do binárního souboru.
+
+Toto testování proběhlo na řadě odlišných obrazů ROM ve velikostech od 257~KB
+do 1~MB, kdy byl porovnán průběh programu v programu {\em bc\_emu} proti
+průběhu téhož programu monitorovanému ladícím nástrojem emulátoru
+Mednafen~\cite{wwwMednafen}.
+
+V průběhu testování pomocí obrazů ROM původních herních programů byla objevena
+a opravena řada chyb a nesrovnalostí v emulaci CPU HuC6280. Během provádění
+oprav byly na řadu citlivých míst (zápisy do paměti, vstupně-výstupní stránky
+apod.) přidány ladící hlášky, které umožňují sledovat podezřelé zápisy, nebo
+čtení z neexistujících adres a určit tak příčinu nefunkčnosti programu.
+
+Stále problematickou oblastí je emulace VDC a VCE. I přes to, že byla řada chyb
+opravena, je spouštění některých herních programů poznamenáno chybami v
+obrazovém výstupu (artefakty, chybějící sprajty). Řada těchto chyb je
+způsobena, z hlediska specifikace, nekorektním chováním programu (např. herní
+program {\em Pc Genjin 2} se snaží do barevných palet zapisovat hodnoty barev
+delší než $3 * 3$ bajty, což bylo třeba ošetřit použitím pouze spodních 9-ti
+bajtů apod.).
+
+I přes uvedené skutečnosti je v případě velké části obrazů ROM, které bylo
+možné otestovat, emulátor plně funkční a herní programy se dají bez větších
+problémů používat, např.:
+{\em Doraemon Meikyu Daisakusen}, {\em Makai Prince Dorabo Chan}, {\em Pc
+Genjin 2}, {\em Son Son}, {\em Xevious} nebo {\em F1 Circus}.
+
+Za funkční jsou považovány i programy které trpí některou z
+následujících kosmetických vad, vyplývajích z částečné, nebo zcela zanedbané
+implementace nekritických částí specifikace. Tyto chyby lze lehce opravit v
+krátkém čase:
+
+\begin{itemize}
+\item Řada herních programů (např. {\em Mesopotamia}) využívá DDA režim PSG.
+	Ten není v této implementaci programu {\em bc\_emu} podporován, takže
+	emulace postrádá zvukový výstup.
+
+\item Některé herní programy (např. {\em Shinobi}) používají efekt paralaxního
+	skrolování obrazu implementovaný pomocí registru {\sf BXR} pomocného
+	grafického procesoru VDC. Práce s tímto registrem je naimplementována
+	chybně a proto je obrazový výstup programu nesprávný.
+
+\item Některé herní programy využívají kolizi sprajtu 0, která v současné době
+	není implementována (lze pozorovat např. v pokročilejší fázi programu {\em
+	Doraemon Nobita no Dorabitan Night}).
+
+\item Řada herních programů využívá k příznaku priority sprajtu (SPBG), která v
+	současné době není implementována (např. {\em Soukoban World}).
+
+\item Některé herní programy využívají instrukci {\sc set}, jejíž implementace
+	je v některých případech nefunkční.
+\end{itemize}
+
+Vzhledem k tomu, že vývoj programu proběhl za dobu uplynulých dvou semestrů a
+podporovaná množina funkcí videoherního systému NEC PCEngine je oproti
+existujícím emulátorům velmi malá, nemá smysl porovnávat řešení z hlediska
+výkonu, nebo právě podpory jednotlivých funkcí a rozšíření systému NEC PCEngine.
+
+%
+% Platformy
+%
+
+\subsection{Platformy}
+
+Překlad a testování programu proběhlo s výše uvedenými výsledky na všech
+platformách, kde byla požadována funkčnost programu:
+
+\begin{itemize}
+\item GNU/Linux, distribuce Debian a RedHat Enterprise Linux 5 (x86-64 i i386)
+\item Microsoft Windows XP SP3 (i386)
+\end{itemize}
+
+Navíc bylo ověřeno, že program je po drobných úpravách možné přeložit ve
+vývojovém prostředí devkitPro~\cite{wwwDevkitPro} pro videoherní handheld
+Nintendo DS. Tato platforma není podporována knihovnou SDL, takže bez
+implementace specifického modulu uživatelské rozhraní nebylo možné skutečně
+ověřit funkčnost.
+
+K překladu bylo ve všech případech využito překladačů ze sady
+GCC~\cite{wwwGCC}, nebo klonů na nich založených. Vzhledem k tomu, že je
+program psán tak, aby byla dodržena norma ANSI C, měl by být zaručen i překlad
+(vyžadující maximálně kosmetické úpravy) jinými překladači implementujícími
+tuto normu.

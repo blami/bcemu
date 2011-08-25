@@ -1,0 +1,291 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bt_balazond.tex - Bachelor thesis                                           %
+% Subject: bc_emu - portable video game emulator                              %
+% Author: Ondrej Balaz <ondra@blami.net>                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Based on K336 template by: Pavel Tvrdik, Daniel Sykora, Michal Valenta
+
+%\documentclass[11pt,twoside,a4paper]{book}
+\documentclass[11pt,oneside,a4paper]{book}
+
+% LaTeX packages
+\usepackage[czech, english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{ae,aecompl}
+%\usepackage{CJKutf8}
+\usepackage{graphicx}
+\usepackage{indentfirst}
+\usepackage{url}
+\usepackage{verbatim}
+
+% local packages
+\usepackage{macros_k336}
+\usepackage{macros_balazond}
+
+% -----------------------------------------------------------------------------
+% Settings
+% -----------------------------------------------------------------------------
+\newcommand\Department{Katedra počítačů}
+\newcommand\Faculty{Fakulta elektrotechnická}
+\newcommand\University{České vysoké učení technické v Praze}
+\newcommand\labelSupervisor{Vedoucí práce}
+\newcommand\labelStudProgram{Studijní program}
+\newcommand\labelStudBranch{Obor}
+
+\newcommand\TypeOfWork{Bakalářská práce}
+\newcommand\StudProgram{Softwarové technologie a management, Bakalářský}
+\newcommand\StudBranch{Softwarové inženýrství}
+\newcommand\WorkTitle{Emulátor systému NEC PCEngine}
+\newcommand\FirstandFamilyName{Ondřej Baláž}
+\newcommand\Supervisor{Ing. Tomáš Davidovič}
+
+% PDF settings
+\usepackage[
+	pdftitle={\WorkTitle},
+	pdfauthor={\FirstandFamilyName},
+	bookmarks=true,
+	colorlinks=true,
+	breaklinks=true,
+	urlcolor=red,
+	citecolor=blue,
+	linkcolor=blue,
+	unicode=true,
+]
+{hyperref}
+
+% -----------------------------------------------------------------------------
+% Main document / begin
+% -----------------------------------------------------------------------------
+
+\begin{document}
+
+\selectlanguage{czech}
+
+%{
+%\pagenumbering{roman} \cleardoublepage \thispagestyle{empty}
+%\chapter*{PLACEHOLDER}
+%\begin{itemize}
+%\item Zadání podepsané děkanem a vedoucím katedry.
+%\end{itemize}
+%\newpage
+%}
+
+% Cover page
+\coverpage
+
+% Acknowledgements
+\acknowledgements
+\noindent
+Na tomto místě bych chtěl poděkovat svým přátelům za jejich podporu, trpělivost
+a dávky sebevědomí, kterými jsem byl zahrnut v období kdy jsem tuto práci psal.
+Slova díku též patří mému zaměstnavateli, který vycházel vstříc mým časovým
+potřebám týkajícím se této práce. \\
+
+% Declaration
+\declaration{V~Praze dne \today}
+
+% Abstract
+\abstract
+This thesis describes emulation of video gaming system NEC PCEngine and
+implementation of basic functionality of the emulator, with focus on modularity
+and portability of source code. In first chapter we present system
+specification compiled from various sources, then existing emulators of this
+system are reviewed. Then we introduce basic ideas and algorithms used in our
+implementation. In last chapter we summarize our results and discuss options
+for further improvements, like adding support for other video gaming system
+emulators or user interfaces.
+
+\vglue 60mm
+\noindent{\Huge \textbf{Abstrakt}}
+\vskip 2.75\baselineskip
+Bakalářská práce se zabývá problematikou emulace videoherního systému NEC
+PCEngine a implementací základní funkčnosti emulátoru s ohledem na modularitu a
+přenositelnost kódu. Čtenář je v úvodní části seznámen se zpracovanou
+specifikací systému, dále jsou představena existující řešení v oblasti emulace
+tohoto systému a rozebrány postupy využívané při implementaci emulátorů.
+Následně jsou nastíněny základní myšlenky a postupy využíté při implementaci
+modulárního přenositelného emulátoru. Závěrečná část pak pojednává o dosažených
+výsledcích a věnuje se možnostem rozšíření navrženého programu o další funkce,
+emulátory dalších videoherních systémů a uživatelská rozhraní.
+
+% Table of contents
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+% List of figures
+
+\listoffigures
+
+% List of tables
+
+\listoftables
+
+% Typographic conventions
+
+\include{ch/NN_typographic_conventions}
+
+% -----------------------------------------------------------------------------
+% Main document / main
+% -----------------------------------------------------------------------------
+
+\mainbodystarts
+\normalfont
+\parskip=0.2\baselineskip plus 0.2\baselineskip minus 0.1\baselineskip
+
+\include{ch/01_introduction}
+\include{ch/02_specification}
+\include{ch/03_existing}
+\include{ch/04_analysis}
+\include{ch/05_implementation}
+\include{ch/06_testing}
+\include{ch/07_conclusion}
+
+% -----------------------------------------------------------------------------
+% Main document / bibliography
+% -----------------------------------------------------------------------------
+
+\bibliographystyle{plain}
+{
+	\def\CS{$\cal C\kern-0.1667em\lower.5ex\hbox{$\cal S$}\kern-0.075em $}
+	\bibliography{bt_balazond}
+}
+
+% -----------------------------------------------------------------------------
+% Main document / appendices
+% -----------------------------------------------------------------------------
+
+\appendix
+
+%*****************************************************************************
+\chapter{Seznam použitých zkratek}
+
+\begin{description}
+\item[ANSI] American National Standards Institute
+\item[BAT] Background Attribute Table
+\item[CPU] Central Processing Unit
+\item[DDA] Direct Data Access
+\item[DMA] Direct Memory Access
+\item[I/O] Input/Output
+\item[IRQ] Interrupt Request
+\item[LFO] Low Frequency Oscillator
+\item[NEC] Nippon Electronic
+\item[NMI] Non-Maskable Interrupt
+\item[NTSC] National Television System Committee
+\item[PAL] Phase Alternating Line
+\item[PSG] Programmable Sound Generator
+\item[RAM] Random Access Memory
+\item[RF] Radio Frequency
+\item[ROM] Read Only Memory
+\item[SAT] Sprite Attribute Table
+\item[VCE] Video Color Encoder
+\item[VDC] Video Display Controller
+\item[VRAM] Video Random Access Memory
+\item[WDC] Western Digital Company
+\end{description}
+
+%*****************************************************************************
+\chapter{Uživatelská příručka}
+
+Text tohoto dodatku popisuje způsob sestavení, spuštění a ovládání programu
+{\em bc\_emu}.
+
+\section{Sestavení programu}
+
+Sestavení programu není nutné provádět na platformách GNU/Linux (i386 a x86-64
+s aktuální verzí knihovny glibc) a Microsoft Windows. Pro tyto platformy jsou v
+příslušných adresářích na přiloženém disku DVD (viz. dodatek~\ref{apdx:dvd})
+připraveny binární soubory, které stačí spustit.
+
+Pro sestavení je nutné mít v systému nainstalovány následující prerekvizity:
+{\em CMake 2.8}, {\em překladač jazyka C (gcc, mingw-gcc)}, {\em
+libSDL1.2-devel}, {\em make}. Samotný postup sestavení je následující:
+
+\begin{enumerate}
+\item zkopírování adresáře {\tt src} z přiloženého DVD na pevný disk
+\item vytvoření adresáře sestavení {\tt build}
+\item konfigurace sestavení souborem {\tt src/CMakeLists.txt} do adresáře {\tt
+	build} pomocí sestavovacího systému  CMake (viz.~\cite{wwwCMake})
+\item spuštění programu make v adresáři {\tt build}
+\end{enumerate}
+
+\section{Spuštění programu}
+
+Program {\em bc\_emu} se spouští pomocí příkazové řádky s přepínači v krátké
+UNIXové notaci (např. {\tt -h}). Pro úspěšné spuštění emulace musí být
+programu kromě jména obrazu ROM předána ještě informace o tom jaký modul
+emulátoru ({\tt -e}) a uživatelského rozhraní ({\tt -u}) má být použit.
+
+Pro demonstraci veškerých schopností programu {\em bc\_emu} stačí program
+spustit jedním z této dvojice příkazů:
+
+\noindent
+{\tt bc\_emu -e pce -u sdl obraz\_rom.pce}
+
+\noindent
+{\tt bc\_emu -e pce -u sdlgl obraz\_rom.pce}
+
+První spustí emulaci se zobrazováním výstupního obrazu pomocí knihovny libSDL,
+druhý pomocí knihovny OpenGL.
+
+V případě použití dodaného binárního souboru, zkompilovaného překladačem MinGW
+GCC pro Microsoft Windows, jsou standardní i chybový výstup přesměrovány do
+souborů {\tt stderr.txt} a {\tt stdout.txt} vytvořených v cestě odkud byl
+program spuštěn. Proto i ladící verze programu nevypisuje žádné hlášky do
+konzolového okna.
+
+\section{Ovládání programu}
+
+V rámci obou modulů uživatelského rozhraní ({\em sdl} i {\em sdlgl}) lze použít
+k ovládání programu klávesy uvedené v tabulce~\ref{tab:manual_keys} (tabulka je
+shodná s tabulkou~\ref{tab:sdl_keymap} a je opakovaně uvedena pro větší
+přehlednost této příručky).
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Klávesa} & \textbf{Význam} \\
+\hline
+{\tt <nahoru>} & směrový kříž herního ovladače, směr nahoru \\
+{\tt <dolů>} & směrový kříž herního ovladače, směr dolů \\
+{\tt <vlevo>} & směrový kříž herního ovladače, směr vlevo \\
+{\tt <vpravo>} & směrový kříž herního ovladače, směr vpravo \\
+{\tt <enter>} & tlačítko \uv{Start} herního ovladače \\
+{\tt a} & tlačítko \uv{I.} herního ovladače \\
+{\tt s} & tlačítko \uv{II.} herního ovladače \\
+\hline
+{\tt r} & restart emulace \\
+{\tt q} & ukončení programu \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Mapování kláves\label{tab:manual_keys}}
+\end{table}
+
+
+%*****************************************************************************
+\chapter{Obsah přiloženého DVD}\label{apdx:dvd}
+
+\noindent
+Na přiloženém DVD jsou umístěny následující adresáře: \\
+
+\noindent
+\begin{tabular}{ll}
+{\tt bin\_linux\_i386} &    binární soubory pro GNU/Linux (i386) \\
+{\tt bin\_linux\_x86-64} &  binární soubory pro GNU/Linux (x86-64) \\
+{\tt bin\_win32} &          binární soubory pro Microsoft Windows (32bit) \\
+{\tt rom\_com} &            obrazy ROM (komerční) \\
+{\tt rom\_free} &           obrazy ROM (volně dostupné) \\
+{\tt src} &                 zdrojový kód programu {\em bc\_emu} \\
+{\tt src\_doc} &            dokumentace ke zdrojovému kódu (HTML) \\
+{\tt thesis} &              soubory PDF s tímto textem (tisk, online) \\
+{\tt thesis\_src} &         zdrojový kód tohoto textu pro systém \LaTeX \\
+\end{tabular}
+
+% -----------------------------------------------------------------------------
+% Main document / end
+% -----------------------------------------------------------------------------
+
+\end{document}

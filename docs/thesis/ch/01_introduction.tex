@@ -1,0 +1,106 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bc.tex - Bachelor thesis                                                    %
+% Subject: bc_emu - portable video game emulator                              %
+% Chapter: Uvod                                                               %
+% Author: Ondrej Balaz <ondra@blami.net>                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Úvod}\label{chap:intro}
+
+Neuvěřitelné tempo, kterým se v dnešní době vyvíjejí nové technologie v oblasti
+výpočetní techniky, nechává mnohem rychleji, než v jiných oblastech, zestárnout
+ty včerejší. Čekání s vývojem software na finální verzi hardware dnes téměř
+implikuje vývoj pro zastaralý hardware a v některých odvětvích, jako je třeba
+videoherní průmysl, může mít pro autora kritické následky. Emulace je postup,
+který pomáhá vývojářům software udržet krok s vývojáři hardware a umožňuje jim
+snadno vytvářet software pro hardware, který ještě ve finální podobě
+neexistuje. Kromě toho, že je díky emulaci paralelní vývoj software a hardware
+běžnou praxí, už i někteří výrobci zpřístupňují ve svých nejmodernějších
+výrobcích emulaci těch starších, které si jejich zákazníci
+oblíbili.
+%\footnote{Největší současní výrobci videoherních konzolí, firmy Sony a
+%Nintendo, poskytují službu, v rámci které je možné pomocí emulátorů
+%nainstalovaných v konzolích Sony Playstation 3 a Portable, nebo Nintendo Wii
+%přehrávat i několik desítek let staré herní tituly.}.
+
+Emulace ale není jen nástroj, který nám pomáhá dostat se s vývojem rychle
+kupředu. Můžeme se díky ní ohlédnout i do minulosti, což je jistě zajímavé
+právě v oblasti zmíněného herního průmyslu. Za posledních 40 let vznikl
+nespočet herních titulů pro 7 generací videoherních konzolí, které si díky
+nízkým pořizovacím nákladům a jednoduchosti používání našly své neohrozitelné
+místo na trhu. Většina z těchto titulů dávno upadla do zapomění nahrazena
+novějšími a emulace videoherních konzolí je tak, vzhledem k nedostupnosti
+potřebného hardware, jedinný způsob jak si tyto tituly připomenout.
+
+Jednou z herních konzolí, pro kterou některé z těchto titulů vznikly je NEC
+PCEngine. Jedná se o poměrně revoluční koznoli 3. generace, která použitím
+16-ti bitové technologie pro obrazový výstup a velice kvalitním zvukovým
+výstupem předčila technické možnosti své konkurence. Snad vlivem špatného
+marketingu společnosti NEC se nikdy nestala tak populární jako ostatní konzole
+této generace, což je společně s tím, že společnost NEC šla cestou použití
+komponent navržených výhradně pro tento systém (např. procesoru)
+důvodem, proč existuje pouze omezené množství emulátorů této konzole. Právě
+zajímavá architektura tohoto systému a poměrně malý počet dostupných emulátorů
+jsou hlavním důvodem, proč se tento systém stal předmětem této práce.
+
+Cílem této práce je prostudování architektury videoherního systému NEC
+PCEngine, její shrnutí do ucelené technické specifikace (pravděpodobně jedinné
+v českém jazyce) a následná analýza, návrh a implementace emulátoru tohoto
+systému na jejím základě. Výsledný emulátor by měl, na rozdíl od většiny
+existujících implementací, umožňovat snadné rozšíření o podporu dalších
+videoherních systémů a být jednoduše přenositelný i na jiné platformy, než
+jsou operační systémy osobních počítačů.
+
+\begin{comment}
+
+Vznik a existence videoherního průmyslu jsou přirozenou reakcí výrobců
+elektronických zařízení na lidskou potřebu bavit se. Historie videoher sahá až
+do roku 1947, kdy bylo patentováno první \uv{zařízení} tohoto druhu - analogový
+obvod implementující jednoduchou hru promítanou na stíntko osciloskopu. K
+prvním komerčním úspěchům v této oblasti však vedla ještě dlouhá cesta, než v
+roce 1972 společnost Atari začala vyrábět legendární videohru {\em PONG}, která
+svým jednoduchým principem, provedením umožňujícím provoz na běžném televizoru
+a nízkou cenou zpřístupnila tento nový druh zábavy široké veřejnosti.
+
+Popularita a úspěch videohry {\em PONG} byly důležitým impulzem pro vznik
+konceptu videoherní konzole, elektronického zařízení pro domácí zábavu. Díky
+jednoduchosti obsluhy, nízkým pořizovacím nákladům a rozmanité škále žánrů
+herních programů si v průběhu uplynulých 40-ti let vybudovalo 7
+generací\footnote{Dělení videoherních konzolí na generace se odvíjí od velkých
+technických kroků v této oblasti, jako je přechod od 8-mi bitů k 16-ti atd.,
+více viz.~\cite{wwwWikiConsole}} videoherních konzolí neotřesitelné místo na
+trhu.
+
+V průběhu těchto 40-ti let také vzniklo nesčetné množství více či méně
+populárních herních programů, které s příchodem nových technologií, a tedy i
+videoherních konzolí nových generací, zastárly. Původní hardware nutný ke
+spuštění těchto programů je v dnešní době prakticky nesehnatelný a jedinnou
+možností jak se k těmto programům vrátit je emulace videoherní konzole, pro
+kterou byly určeny.
+
+Cílem této práce je nastudovat architekturu videoherní konzole NEC PCEngine a
+na základě 
+
+Vrcholu své popularity dosáhly videoherní konzole v letech 1983-1995, tedy v
+době, kdy už byla běžně dostupná osobní výpočetní technika, ale v případě, že
+by měla sloužit pouze jako zdroj zábavy, byla její cena stále příliš vysoká.
+Dostupné technologie společně s důmyslným návrhem však umožnily přinést na
+trh levné, ale přesto výkonné videoherní konzole 3. generace, které se
+vyznačovaly detailní a propracovanou grafikou ve vysokém rozlišení, kvalitním
+zvukovým výstupem a novými způsoby ovládání.
+
+Příchod videoherních konzolí 3. generace měl za následek nové možnosti při
+vývoji herních programů, díky čemuž právě v této době vznikla řada
+nezapomenutelných titulů (např. {\em Final Fantasy}, {\em Super Mario Bros.},
+{\em The Legend of Zelda}, {\em Castlevania}, {\em Contra}), které možná byly
+nebo budou překonány po stránce technického zpracování, ale nikoliv po stránce
+originality a nápadu, o čemž svědčí i fakt, že velké množství dnešních
+videoherních titulů z nich čerpá, nebo je jejich kopií oblečenou do \uv{nového
+kabátu}.
+
+Právě do 3. generace videoherních konzolí patří systém NEC PCEngine. Jeho
+unikátní architektura založená na 8-mi bitovém hlavním procesoru a 16-ti
+bitovém grafickém subsystému
+
+
+\end{comment}

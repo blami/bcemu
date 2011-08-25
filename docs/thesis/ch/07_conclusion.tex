@@ -1,0 +1,69 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% bc.tex - Bachelor thesis                                                    %
+% Subject: bc_emu - portable video game emulator                              %
+% Chapter: Zaver                                                              %
+% Author: Ondrej Balaz <ondra@blami.net>                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Závěr}
+
+Na základě dostupných informací byla nastudována architektura videoherního
+systému NEC PCEngine a získané poznatky byly shrnuty do ucelené technické
+specifikace uvedené v kapitole~\ref{chap:spec}. Ta posloužila jako základ pro
+analýzu, návrh a následnou implementaci emulátoru tohoto systému.
+
+S ohledem na modularitu ve smyslu možnosti rozšíření o podporu dalších
+videoherních systémů, nebo uživatelských rozhraní, byl naimplementován emulátor
+systému NEC PCEngine, jehož funkčnost byla úspěšně ověřena pomocí řady
+původních herních programů.
+
+Emulátor zahrnuje alespoň základní podporu všech částí základní varianty
+systému NEC PCEngine a interpretačním způsobem umožňuje spouštění a provádění
+herních programů uložených v souborech představujících obsah paměti ROM
+původních čipových karet HuCard.
+
+Zvolená architektura programu odděluje veškerou logiku emulace a interakce s
+uživatelem do diskrétních modulů s pevně definovaným rozhraním, čímž umožňuje
+nejen snadné rozšíření o podporu emulace dalších videoherních systému, ale i
+zjednodušení přenositelnosti zapouzdřením kódu závislého na platformě.
+
+Vzhledem k tomu, že program splňuje všechny zadáním specifikované požadavky a
+nesrovnalosti, které se projevují při provádění emulovaných programů, jsou buď
+kosmetické a lze je bez výraznějších zásahů do architektury programu odstranit,
+nebo jsou způsobeny použitím nestandartních technik v rámci těchto programů a 
+je třeba je řešit individuálně, lze prohlásit, že cíl této práce byl splněn.
+
+% -----------------------------------------------------------------------------
+% Dalsiho vyvoj
+% -----------------------------------------------------------------------------
+
+\section{Další vývoj}
+
+Díky modulární architektuře umožňující implementaci podpory dalších
+videoherních systémů a uživatelských rozhraní jsou možnosti rozšiřování téměř
+nekonečné. Před samotným rozšiřováním tímto směrem by však mělo být zváženo
+několik zásadnějších zásahů do architektury programu.
+
+Do programu by mělo být přidáno obecné rozhraní umožňující modulům dotazovat se
+na hodnoty konfiguračních klíčů (např. moduly uživatelského rozhraní by měly
+mít možnost konfigurce vstupních zařízení, rozlišení obrazovky, formátu zvuku
+apod.).
+
+Dalším možným rozšířením je implementace nového typu modulu - ladícího
+nástroje pro emulovaný program, který by uměl na obecné úrovni (samozřejmě by
+autor modulu emulátoru musel provést nastavení) sledovat registry a paměťové
+oblasti emulovaného systému, případně krokovat program.
+
+Implementace ladícího nástroje by jistě pomohla při dalším zdokonalování modulu
+emulátoru systému NEC PCEngine. Kromě odstranění drobných chyb a doimplementace
+chybějících, v kapitole~\ref{chap:test_results} zmíněných, nekritických částí
+specifikace, by bylo vhodné zdokonalit kód PSG a přidat podporu pro některá
+populární rozšíření.
+
+Po zásadnějších úpravách a stabilizaci architektury může být zajímavou výzvou
+přenést program {\em bc\_emu} na videoherní handheld Nintendo DS. S drobnými
+úpravami je už nyní možné pro tento systém přeložit jádro programu. Dalším
+krokem je nastudování programového rozhraní knihoven devkitPro a implementace
+modulu uživatelského rozhraní. Vzhledem k výkonu procesoru tohoto systému mohou
+nastat potíže s výkonem. Dalším směrem vývoje proto může být optimalizace
+emulačního kódu při zachování přenositelnosti.

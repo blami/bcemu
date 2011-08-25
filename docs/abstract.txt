@@ -1,0 +1,19 @@
+This thesis describes emulation of video gaming system NEC PCEngine and
+implementation of basic functionality of the emulator, with focus on modularity
+and portability of source code. In first chapter we present system
+specification compiled from various sources, then existing emulators of this
+system are reviewed. Then we introduce basic ideas and algorithms used in our
+implementation. In last chapter we summarize our results and discuss options
+for further improvements, like adding support for other video gaming system
+emulators or user interfaces.
+
+Bakalářská práce se zabývá problematikou emulace videoherního systému NEC
+PCEngine a implementací základní funkčnosti emulátoru s ohledem na modularitu a
+přenositelnost kódu. Čtenář je v úvodní části seznámen se zpracovanou
+specifikací systému, dále jsou představena existující řešení v oblasti emulace
+tohoto systému a rozebrány postupy využívané při implementaci emulátorů.
+Následně jsou nastíněny základní myšlenky a postupy využíté při implementaci
+modulárního přenositelného emulátoru. Závěrečná část pak pojednává o dosažených
+výsledcích a věnuje se možnostem rozšíření navrženého programu o další funkce,
+emulátory dalších videoherních systémů a uživatelská rozhraní.
+

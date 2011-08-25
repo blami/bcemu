@@ -1,0 +1,25 @@
+Implementační BP
+    Analýza a návrh řešení problému jsou obvykle (alespoň v hrubých rysech) součástí zadání, nebo se jedná o relativně jednodušší systémy, kde analýza a návrh řešení jsou buď obecně známé či vzniknou relativně rutinní cestou (například návrh podpůrné databáze v informačním systému pomocí CASE nástrojů).
+    
+    Výsledkem BP této kategorie je hotový, použitelný produkt, HW (karta, zařízení, ...) nebo SW (program, knihovní modul, ...), jehož funkčnost je autor případně schopen demonstrovat při obhajobě BP (nemusí k tomu dojít). Funkčnost systému by měla být ověřena alespoň vedoucím a oponentem BP. V případě volby mezi různými implementačními prostředími či technologiemi by BP měla zahrnovat též diskusi a posléze zdůvodnění volby toho kterého implementačního prostředí (jazyku, knihovny, použitého nástroje a generátoru, síťové technologie, atd.). Důležitou částí BP by měly být aspoň základní testy funkčnosti a výkonnosti produktu. BP by dále měla popisovat rozhraní produktu (u interaktivních systémů typicky grafické), dokumentaci a uživatelskou příručku. Kompletní dokumentace se přikládá jako příloha na přiloženém CD (zahrnuje zdrojový, případně přeložený kód, instalační či uživatelskou příručku, zvl. v případě složitějšího ovládání produktu, atd.).
+Příklady zadání:
+
+    * implementace jednoduchého informačního, výukového, prezentačního či publikačního systému, workflow systému, případové studie použití nových technologií v nějaké oblasti, grafické projekty (např. vytvoření 3D modelu pro virtuální realitu), ....
+    * implementace a testování, případně následné vylepšení, specifického algoritmu, modulu, či části knihovny  z  různých oblastí informatiky - například počítačová grafika, stringologie, numerické a paralelní výpočty, části SŘBD, kompresní a konverzní programy, překladače, neuronové sítě, ....
+    * návrh a realizace HW komponenty (speciální periferní zařízení, řadič, přepínač, PCI karta, vestavěný systém, ....)
+    * SW závislý na HW (ovladač, modul do jádra OS, část speciální knihovny, komunikační protokol, .... )
+    * SW simulace složitějšího systému (komunikačního systému, paralelního systému, procesoru, .... )
+
+Doporučené schéma BP:
+
+   1.  Úvod charakterizující kontext zadání.
+   2.  Popis řešeného problému, vymezení cílů BP a požadavků na implementovaný systém.
+   3.  Popis struktury BP ve vztahu k vytyčeným cílům.
+   4.  Rešeršní zpracování existujících implementací, pokud jsou známy.
+   5.  Analýza a návrh implementace (včetně diskuse různých alternativ a volby implementačního prostředí).
+   6.  Popis implementace / realizace se zaměřením na nestandardní části řešení.
+   7. Výsledky testování.
+   8.  Srovnání s existujícími řešeními, pokud jsou známy.
+   9.  Závěr (zhodnocení splnění cílů BP, vlastního přínosu, doporučení dalšího pokračování práce.)
+  10.  Seznam použité literatury.
+  11.  Přílohy.
